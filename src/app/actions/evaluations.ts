@@ -70,7 +70,7 @@ export async function updateEvaluationCriterion(id: string, data: z.infer<typeof
 
 // --- Team Evaluations ---
 
-export const saveTeamEvaluationsSchema = z.object({
+const saveTeamEvaluationsSchema = z.object({
   team_id: z.string().uuid(),
   evaluations: z.array(z.object({
     criteria_id: z.string().uuid(),

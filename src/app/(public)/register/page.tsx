@@ -24,10 +24,19 @@ export default async function RegisterPage() {
 
   const { data: eventSettings } = await supabase
     .from('event_settings')
-    .select('registration_open')
+    .select('registration_open, template_title, template_storage_path, template_instructions')
     .single();
 
-  const isRegistrationOpen = eventSettings?.registration_open ?? true; // Fallback to true if not set
+  const isRegistrationOpen = eventSettings?.registration_open ?? true;
+
+  // Build public template URL from event-assets bucket (public bucket)
+  let templateUrl: string | null = null;
+  if (eventSettings?.template_storage_path) {
+    const { data: urlData } = supabase.storage
+      .from('event-assets')
+      .getPublicUrl(eventSettings.template_storage_path);
+    templateUrl = urlData?.publicUrl ?? null;
+  }
 
   return (
     <div className="container-page py-8 md:py-12">
@@ -49,7 +58,12 @@ export default async function RegisterPage() {
           />
         </div>
       ) : (
-        <RegistrationWizard problemStatements={problemStatements || []} />
+        <RegistrationWizard
+          problemStatements={problemStatements || []}
+          templateUrl={templateUrl}
+          templateTitle={eventSettings?.template_title ?? null}
+          templateInstructions={eventSettings?.template_instructions ?? null}
+        />
       )}
     </div>
   );

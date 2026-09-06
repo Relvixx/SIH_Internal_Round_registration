@@ -93,14 +93,15 @@ export async function registerTeam(
     
     // Basic Mime/Format Check from Storage Metadata
     const extension = fileName.split('.').pop()?.toLowerCase() || '';
-    const allowedFormats = [...(settings?.allowed_presentation_formats || ['pdf', 'pptx']), 'png', 'jpg', 'jpeg', 'webp'];
+    const allowedFormatsFromSettings = (settings?.allowed_presentation_formats || ['pdf', 'pptx']).map((f: string) => f.replace(/^\./, ''));
+    const allowedFormats = [...allowedFormatsFromSettings, 'png', 'jpg', 'jpeg', 'webp'];
     if (!allowedFormats.includes(extension)) {
        return { success: false, error: 'Uploaded file format is not allowed.' };
     }
 
     // 5. Atomic RPC Call
     const membersData = validatedData.members.map((member) => ({
-      role: member.role,
+      role: member.role === 'team_leader' ? 'leader' : 'member', // Map to DB enum
       first_name: member.full_name.split(' ')[0],
       last_name: member.full_name.split(' ').slice(1).join(' ') || '.', 
       email: member.email,
@@ -108,6 +109,7 @@ export async function registerTeam(
       gender: member.gender,
       year_of_study: member.year_or_semester || '',
       department: member.department || '',
+      enrollment_number: member.enrollment_number || null,
     }));
 
     const { data: rpcData, error: rpcError } = await supabase.rpc('register_team_transaction', {

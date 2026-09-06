@@ -20,7 +20,7 @@ export async function getSignedUploadUrl(
 
     // 1. Fetch Event Settings with Fallbacks
     let presentationMaxSizeMb = 50;
-    let allowedFormats = ['pdf', 'pptx', 'png', 'jpg', 'jpeg', 'webp'];
+    let allowedFormats = ['pdf', 'ppt', 'pptx', 'png', 'jpg', 'jpeg', 'webp'];
 
     try {
       const { data: settings } = await supabase
@@ -32,7 +32,8 @@ export async function getSignedUploadUrl(
         presentationMaxSizeMb = settings.presentation_max_size_mb;
       }
       if (settings?.allowed_presentation_formats && settings.allowed_presentation_formats.length > 0) {
-        allowedFormats = [...settings.allowed_presentation_formats];
+        // Strip leading dots to match extension variable
+        allowedFormats = settings.allowed_presentation_formats.map((f: string) => f.replace(/^\./, ''));
         const imageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
         imageExtensions.forEach(ext => {
           if (!allowedFormats.includes(ext)) allowedFormats.push(ext);

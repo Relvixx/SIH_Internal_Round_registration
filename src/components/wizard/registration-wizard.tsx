@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField } from '@/components/ui/form-field';
 import { Select } from '@/components/ui/select';
-import { Upload, X, AlertCircle, CheckCircle2, AlertTriangle, ExternalLink, Home, Plus, Trash2, Users } from 'lucide-react';
+import { Upload, X, AlertCircle, CheckCircle2, AlertTriangle, ExternalLink, Home, Plus, Trash2, Users, FileText } from 'lucide-react';
 import { registerTeam } from '@/app/actions/register';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -26,13 +26,19 @@ export function RegistrationWizard({
   initialData,
   isEditMode = false,
   teamId,
-  editToken
+  editToken,
+  templateUrl,
+  templateTitle,
+  templateInstructions,
 }: { 
   problemStatements?: Array<{ id: string; ps_id: string; title: string; category?: string | null; theme?: string | null; organization: string }>;
   initialData?: Partial<TeamRegistrationInput>;
   isEditMode?: boolean;
   teamId?: string;
   editToken?: string;
+  templateUrl?: string | null;
+  templateTitle?: string | null;
+  templateInstructions?: string | null;
 }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -479,6 +485,31 @@ export function RegistrationWizard({
                 </div>
               )}
 
+              {/* PPT Template Download */}
+              {templateUrl && (
+                <div className="p-4 rounded-lg border border-[var(--color-primary-subtle)] bg-[var(--color-primary-subtle)]/30 flex items-start gap-4">
+                  <FileText className="w-6 h-6 text-[var(--color-primary)] shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-[var(--color-ink)] mb-0.5">
+                      📄 {templateTitle || 'SIH Presentation Template'}
+                    </p>
+                    {templateInstructions && (
+                      <p className="text-xs text-[var(--color-ink-secondary)] mb-2">{templateInstructions}</p>
+                    )}
+                    <p className="text-xs text-[var(--color-ink-tertiary)] mb-3">Download and use this official template for your presentation.</p>
+                    <a
+                      href={templateUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
+                    >
+                      <Upload className="w-4 h-4 rotate-180" /> Download Template
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {/* Problem Statement Input */}
               <FormField
                 label="Problem Statement & Proposed Solution"
@@ -509,10 +540,10 @@ export function RegistrationWizard({
 
                 {!fileMetadata ? (
                   <div className="border-2 border-dashed border-[var(--color-border-subtle)] rounded-lg p-6 text-center hover:bg-[var(--color-canvas-subtle)] transition-colors relative cursor-pointer">
-                    <input type="file" accept=".pdf,.pptx,.png,.jpg,.jpeg,.webp" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                    <input type="file" accept=".pdf,.ppt,.pptx,.png,.jpg,.jpeg,.webp" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
                     <Upload className="w-8 h-8 text-[var(--color-primary)] mx-auto mb-2" />
                     <p className="text-sm font-medium text-[var(--color-ink)]">Click or drag file to upload</p>
-                    <p className="text-xs text-[var(--color-ink-tertiary)] mt-1">Allowed formats: .pdf, .pptx, .png, .jpg, .jpeg, .webp (max 50MB)</p>
+                    <p className="text-xs text-[var(--color-ink-tertiary)] mt-1">Allowed formats: .pdf, .ppt, .pptx, .png, .jpg, .jpeg, .webp (max 50MB)</p>
                     {uploadProgress > 0 && <p className="mt-3 text-sm text-[var(--color-primary)] font-medium">Uploading: {uploadProgress}%</p>}
                   </div>
                 ) : (
