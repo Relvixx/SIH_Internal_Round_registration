@@ -5,7 +5,7 @@ import { StatCard } from '@/components/ui/stat-card';
 import { Card, CardHeader } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Alert } from '@/components/ui/alert';
-import { Users, FileText, AlertTriangle, Inbox, CheckCircle, Clock } from 'lucide-react';
+import { Users, FileText, AlertTriangle, Inbox, Clock } from 'lucide-react';
 import { TEAM_STATUS_LABELS, type TeamStatus } from '@/lib/constants';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';

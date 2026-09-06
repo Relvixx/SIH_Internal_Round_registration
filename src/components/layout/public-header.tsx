@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, ArrowRight } from 'lucide-react';
+import { Menu, ArrowRight } from 'lucide-react';
 import { Logo } from '@/components/branding/logo';
 import { Button } from '@/components/ui/button';
 import { Sheet } from '@/components/ui/sheet';
@@ -45,9 +45,11 @@ export function PublicHeader() {
           <div className="flex items-center gap-3">
             {/* Desktop CTA */}
             <div className="hidden md:block">
-              <Button size="sm" icon={<ArrowRight className="h-4 w-4" />}>
-                <Link href="/register">Register</Link>
-              </Button>
+              <Link href="/register">
+                <Button size="sm" icon={<ArrowRight className="h-4 w-4 text-white" />}>
+                  Register Your Team
+                </Button>
+              </Link>
             </div>
 
             {/* Mobile menu button */}
@@ -81,9 +83,11 @@ export function PublicHeader() {
             </Link>
           ))}
           <div className="mt-4 px-4">
-            <Button className="w-full" icon={<ArrowRight className="h-4 w-4" />}>
-              <Link href="/register" onClick={() => setMobileOpen(false)}>Register Your Team</Link>
-            </Button>
+            <Link href="/register" onClick={() => setMobileOpen(false)}>
+              <Button className="w-full" icon={<ArrowRight className="h-4 w-4 text-white" />}>
+                Register Your Team
+              </Button>
+            </Link>
           </div>
         </nav>
       </Sheet>

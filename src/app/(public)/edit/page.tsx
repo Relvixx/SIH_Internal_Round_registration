@@ -19,9 +19,9 @@ export const dynamic = 'force-dynamic';
 export default async function EditPage({
   searchParams,
 }: {
-  searchParams: { id?: string; token?: string };
+  searchParams: Promise<{ id?: string; token?: string }>;
 }) {
-  const { id, token } = searchParams;
+  const { id, token } = await searchParams;
 
   if (!id || !token) {
     return (
@@ -100,7 +100,7 @@ export default async function EditPage({
     solution_summary: team.idea_description,
     key_innovation: '', // Not saved in DB in MVP
     proposed_technology: '', // Not saved in DB in MVP
-    members: (team.team_members || []).map((m: any, i: number) => ({
+    members: (team.team_members || []).map((m: { first_name: string; last_name: string; role: 'team_leader' | 'member'; gender: 'male' | 'female' | 'other'; email: string; phone: string; department: string; year_of_study: string }, i: number) => ({
       member_order: i + 1,
       role: m.role,
       full_name: `${m.first_name} ${m.last_name}`,

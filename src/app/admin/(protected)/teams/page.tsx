@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Card } from '@/components/ui/card';
-import { Users, Presentation } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { getAdminTeams } from '@/lib/services/admin-teams';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -14,23 +14,24 @@ import { TeamsPagination } from './teams-pagination';
 export const metadata: Metadata = { title: 'Teams' };
 
 interface TeamsPageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     status?: string;
     theme?: string;
     search?: string;
-    sortBy?: string;
-  };
+    sortBy?: 'newest' | 'oldest' | 'score_high' | 'score_low';
+  }>;
 }
 
 export default async function AdminTeamsPage({ searchParams }: TeamsPageProps) {
-  const page = parseInt(searchParams.page || '1', 10);
-  const status = searchParams.status || undefined;
-  const theme = searchParams.theme || undefined;
-  const search = searchParams.search || undefined;
-  const sortBy = (searchParams.sortBy as any) || 'newest';
+  const resolvedSearchParams = await searchParams;
+  const page = parseInt(resolvedSearchParams.page || '1', 10);
+  const status = resolvedSearchParams.status || undefined;
+  const theme = resolvedSearchParams.theme || undefined;
+  const search = resolvedSearchParams.search || undefined;
+  const sortBy = resolvedSearchParams.sortBy || 'newest';
 
-  const { data: teams, count, totalPages } = await getAdminTeams({
+  const { data: teams, totalPages } = await getAdminTeams({
     page,
     pageSize: 30,
     status,

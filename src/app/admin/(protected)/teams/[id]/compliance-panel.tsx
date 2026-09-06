@@ -5,12 +5,17 @@ import { Alert } from '@/components/ui/alert';
 import { ShieldCheck, AlertTriangle } from 'lucide-react';
 import type { AdminTeamMember } from '@/lib/services/admin-teams';
 
+interface DuplicateParticipant {
+  duplicate_registration_code: string;
+  email: string;
+}
+
 export function CompliancePanel({ 
   members, 
   duplicates 
 }: { 
-  members: AdminTeamMember[], 
-  duplicates: any[] 
+  members: AdminTeamMember[]; 
+  duplicates: DuplicateParticipant[];
 }) {
   const leader = members.find(m => m.role === 'leader');
   const size = members.length;

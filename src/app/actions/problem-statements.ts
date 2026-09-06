@@ -103,7 +103,7 @@ export async function deactivateProblemStatement(id: string) {
   return { success: true };
 }
 
-export async function importProblemStatements(rows: any[]) {
+export async function importProblemStatements(rows: Array<Record<string, unknown>>) {
   const supabase = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Unauthorized' };

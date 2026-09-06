@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
-function escapeCSVField(field: any): string {
+function escapeCSVField(field: unknown): string {
   if (field === null || field === undefined) return '';
   let str = String(field);
   
@@ -54,8 +54,26 @@ export async function GET(request: NextRequest) {
 
   // Get all members for these teams
   const teamIds = teams.map(t => t.id);
-  let members: any[] = [];
-  let files: any[] = [];
+  interface MemberRecord {
+    id: string;
+    team_id: string;
+    role: string;
+    first_name: string;
+    last_name: string;
+    gender: string;
+    enrollment_number: string;
+    department: string;
+    year_of_study: string;
+    email: string;
+    phone: string;
+  }
+  interface FileRecord {
+    team_id: string;
+    file_name: string;
+  }
+
+  let members: MemberRecord[] = [];
+  let files: FileRecord[] = [];
   
   if (teamIds.length > 0) {
     const [mDataRes, fDataRes] = await Promise.all([
@@ -72,12 +90,12 @@ export async function GET(request: NextRequest) {
         .eq('file_type', 'presentation')
     ]);
       
-    if (mDataRes.data) members = mDataRes.data;
-    if (fDataRes.data) files = fDataRes.data;
+    if (mDataRes.data) members = mDataRes.data as MemberRecord[];
+    if (fDataRes.data) files = fDataRes.data as FileRecord[];
   }
 
   // Group members by team
-  const membersByTeam: Record<string, any[]> = {};
+  const membersByTeam: Record<string, MemberRecord[]> = {};
   members.forEach(m => {
     if (!membersByTeam[m.team_id]) membersByTeam[m.team_id] = [];
     membersByTeam[m.team_id].push(m);
@@ -144,7 +162,7 @@ export async function GET(request: NextRequest) {
       t.ppt_review_status || 'not_reviewed'
     ];
 
-    const memberData: any[] = [];
+    const memberData: string[] = [];
     for (let i = 0; i < 6; i++) {
       const m = teamMembers[i];
       if (m) {

@@ -7,10 +7,20 @@ import Papa from 'papaparse';
 import { UploadCloud, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Dialog } from '@/components/ui/dialog';
 
+interface CSVProblemStatementRow {
+  [key: string]: unknown;
+  ps_id: string;
+  title: string;
+  organization: string;
+  theme?: string;
+  category?: string;
+  problem_type: string;
+  description?: string;
+}
+
 export function CSVImport() {
   const [isOpen, setIsOpen] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [parsedData, setParsedData] = useState<any[]>([]);
+  const [parsedData, setParsedData] = useState<CSVProblemStatementRow[]>([]);
   const [validationErrors, setValidationErrors] = useState<{row: number, error: string}[]>([]);
   const [globalError, setGlobalError] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
@@ -27,16 +37,14 @@ export function CSVImport() {
       const selectedFile = e.target.files[0];
       if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
         setGlobalError('Please select a valid CSV file.');
-        setFile(null);
         return;
       }
-      setFile(selectedFile);
       
       Papa.parse(selectedFile, {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-          const rows = results.data as any[];
+          const rows = results.data as CSVProblemStatementRow[];
           const errors: {row: number, error: string}[] = [];
           const seenIds = new Set<string>();
 
@@ -76,7 +84,6 @@ export function CSVImport() {
     const res = await importProblemStatements(parsedData);
     if (res.success) {
       setResult({ success: true, count: res.count });
-      setFile(null);
       setParsedData([]);
       setTimeout(() => {
         setIsOpen(false);
@@ -99,7 +106,6 @@ export function CSVImport() {
         open={isOpen}
         onClose={() => {
           setIsOpen(false);
-          setFile(null);
           setParsedData([]);
           setValidationErrors([]);
           setGlobalError('');

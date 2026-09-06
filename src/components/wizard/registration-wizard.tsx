@@ -11,28 +11,24 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField } from '@/components/ui/form-field';
 import { Select } from '@/components/ui/select';
-import { SearchableSelect } from '@/components/ui/searchable-select';
-import { Upload, X, AlertCircle, CheckCircle2, Copy, AlertTriangle, ExternalLink, Home } from 'lucide-react';
+import { Upload, X, AlertCircle, CheckCircle2, AlertTriangle, ExternalLink, Home, Plus, Trash2, Users } from 'lucide-react';
 import { registerTeam } from '@/app/actions/register';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 const STEPS = [
   { id: 'team', title: 'Team Details' },
-  { id: 'members', title: 'Team Members' },
-  { id: 'problem', title: 'Problem Statement' },
-  { id: 'idea', title: 'Idea & PPT' },
+  { id: 'solution', title: 'Problem & Presentation' },
   { id: 'review', title: 'Review & Submit' }
 ];
 
 export function RegistrationWizard({ 
-  problemStatements, 
   initialData,
   isEditMode = false,
   teamId,
   editToken
 }: { 
-  problemStatements: any[];
+  problemStatements?: Array<{ id: string; ps_id: string; title: string; category?: string | null; theme?: string | null; organization: string }>;
   initialData?: Partial<TeamRegistrationInput>;
   isEditMode?: boolean;
   teamId?: string;
@@ -45,6 +41,7 @@ export function RegistrationWizard({
     isEditMode ? { path: 'existing', name: 'Existing File', size: 0, mime: '' } : null
   );
   const [submitError, setSubmitError] = useState<string>('');
+  const [validationNotice, setValidationNotice] = useState<string>('');
   const [successData, setSuccessData] = useState<{ id: string; code: string; token: string } | null>(null);
   const router = useRouter();
   const idempotencyKeyRef = useRef<string>('');
@@ -57,7 +54,7 @@ export function RegistrationWizard({
 
   const form = useForm<TeamRegistrationInput>({
     resolver: zodResolver(teamRegistrationSchema),
-    mode: 'onTouched',
+    mode: 'onChange',
     defaultValues: initialData || {
       team_name: '',
       problem_statement_id: '',
@@ -65,7 +62,7 @@ export function RegistrationWizard({
       solution_summary: '',
       key_innovation: '',
       proposed_technology: '',
-      members: Array.from({ length: 6 }).map((_, i) => ({
+      members: Array.from({ length: 3 }).map((_, i) => ({
         member_order: i + 1,
         role: (i === 0 ? 'team_leader' : 'member') as 'team_leader' | 'member',
         full_name: '',
@@ -80,22 +77,74 @@ export function RegistrationWizard({
   });
 
   const { control, handleSubmit, trigger, watch, formState: { errors } } = form;
-  const { fields } = useFieldArray({ control, name: 'members' });
+  const { fields, append, remove } = useFieldArray({ control, name: 'members' });
 
-  const nextStep = async () => {
-    let fieldsToValidate: any[] = [];
-    if (currentStepIndex === 0) fieldsToValidate = ['team_name'];
-    if (currentStepIndex === 1) fieldsToValidate = ['members'];
-    if (currentStepIndex === 2) fieldsToValidate = ['problem_statement_id'];
-    if (currentStepIndex === 3) fieldsToValidate = ['idea_title', 'solution_summary', 'key_innovation', 'proposed_technology'];
+  const watchedMembers = watch('members') || [];
+  const femaleCount = watchedMembers.filter(m => m?.gender === 'female').length;
+  const teamSize = fields.length;
 
-    const isValid = await trigger(fieldsToValidate as any);
-    if (isValid) {
-      setCurrentStepIndex(prev => Math.min(prev + 1, STEPS.length - 1));
+  const addMember = () => {
+    if (fields.length < 6) {
+      append({
+        member_order: fields.length + 1,
+        role: 'member',
+        full_name: '',
+        gender: 'male',
+        email: '',
+        phone: '',
+        enrollment_number: '',
+        department: '',
+        year_or_semester: '',
+      });
+      setValidationNotice('');
     }
   };
 
+  const removeMember = (index: number) => {
+    if (fields.length > 3 && index >= 1) {
+      remove(index);
+      setValidationNotice('');
+    }
+  };
+
+  const nextStep = async () => {
+    setValidationNotice('');
+
+    if (currentStepIndex === 0) {
+      // Step 1: Team Details (Name + Members)
+      const isValidForm = await trigger(['team_name', 'members']);
+      
+      if (teamSize < 3) {
+        setValidationNotice('A team must have at least 3 members.');
+        return;
+      }
+      if (teamSize > 6) {
+        setValidationNotice('A team cannot have more than 6 members.');
+        return;
+      }
+      if (femaleCount < 2) {
+        setValidationNotice('Your team must include at least 2 female members to proceed.');
+        return;
+      }
+      if (!isValidForm) return;
+    }
+
+    if (currentStepIndex === 1) {
+      // Step 2: Problem Statement & Presentation
+      const isValidForm = await trigger(['solution_summary']);
+      if (!isValidForm) return;
+
+      if (!fileMetadata && !isEditMode) {
+        setValidationNotice('Please upload your presentation file before proceeding.');
+        return;
+      }
+    }
+
+    setCurrentStepIndex(prev => Math.min(prev + 1, STEPS.length - 1));
+  };
+
   const prevStep = () => {
+    setValidationNotice('');
     setCurrentStepIndex(prev => Math.max(prev - 1, 0));
   };
 
@@ -111,7 +160,6 @@ export function RegistrationWizard({
     setUploadProgress(10);
 
     try {
-      // 1. Get Signed Upload URL from trusted Next.js server
       const { getSignedUploadUrl } = await import('@/app/actions/upload');
       const res = await getSignedUploadUrl(file.name, file.type, file.size);
       
@@ -123,7 +171,17 @@ export function RegistrationWizard({
 
       setUploadProgress(50);
       
-      // 2. Upload directly to Supabase Storage using the signed URL
+      if (res.signedUrl === '#' || !res.signedUrl) {
+        setUploadProgress(100);
+        setFileMetadata({
+          path: res.storagePath || `uploads/${file.name}`,
+          name: file.name,
+          size: file.size,
+          mime: file.type || 'application/pdf'
+        });
+        return;
+      }
+
       const uploadRes = await fetch(res.signedUrl, {
         method: 'PUT',
         headers: {
@@ -148,6 +206,7 @@ export function RegistrationWizard({
         setUploadProgress(0);
       }
     } catch (err) {
+      console.error('File upload error:', err);
       alert("Upload failed due to network error.");
       setUploadProgress(0);
     }
@@ -168,14 +227,14 @@ export function RegistrationWizard({
         const result = await updateTeam(teamId, editToken, data, fileMetadata?.path === 'existing' ? null : fileMetadata);
         if (result.success) {
           alert('Team details updated successfully!');
-          router.push(`/`); // Or to a success page without token
+          router.push(`/`);
         } else {
           setSubmitError(result.error || 'Failed to update team.');
         }
       } else {
         const result = await registerTeam(data, fileMetadata!, idempotencyKeyRef.current);
         if (result.success) {
-          idempotencyKeyRef.current = ''; // Clear for future unrelated submissions if any
+          idempotencyKeyRef.current = '';
           setSuccessData({
             id: result.teamId!,
             code: result.registrationCode!,
@@ -186,6 +245,7 @@ export function RegistrationWizard({
         }
       }
     } catch (error) {
+      console.error('Submit error:', error);
       setSubmitError('An unexpected error occurred.');
     } finally {
       setIsSubmitting(false);
@@ -266,10 +326,15 @@ export function RegistrationWizard({
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Step 1: Team Details */}
+          {/* Step 1: Merged Team Details (Team Name + Team Members) */}
           {currentStepIndex === 0 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-              <h2 className="text-xl font-bold mb-4">Team Details</h2>
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+              <div>
+                <h2 className="text-xl font-bold mb-2">Team Details</h2>
+                <p className="text-sm text-[var(--color-ink-secondary)]">Enter your team name and member details (Min 3, Max 6 members. Must include at least 2 female members).</p>
+              </div>
+
+              {/* Team Name */}
               <FormField
                 label="Team Name"
                 error={errors.team_name?.message}
@@ -281,120 +346,174 @@ export function RegistrationWizard({
                   render={({ field }) => <Input placeholder="e.g. Innovators" {...field} />}
                 />
               </FormField>
+
+              {/* Team Rules Summary Bar */}
+              <div className="p-4 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-50)] flex flex-wrap justify-between items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-[var(--color-primary)]" />
+                  <span className="font-semibold text-sm">
+                    Team Size: <span className={teamSize < 3 || teamSize > 6 ? "text-[var(--color-danger)] font-bold" : "text-[var(--color-primary)] font-bold"}>{teamSize}</span> / 6 (Min 3 required)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm">
+                    Female Members: <span className={femaleCount < 2 ? "text-[var(--color-warning-700)] font-bold" : "text-[var(--color-success)] font-bold"}>{femaleCount}</span> / 2 required
+                  </span>
+                </div>
+              </div>
+
+              {/* Female Count Requirement Alert */}
+              {femaleCount < 2 && (
+                <div className="p-4 bg-[var(--color-warning-subtle)] border border-[var(--color-warning)]/30 rounded-lg flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 shrink-0 text-[var(--color-warning)]" />
+                  <p className="text-sm font-medium text-[var(--color-ink)]">
+                    Your team must include at least 2 female members to proceed.
+                  </p>
+                </div>
+              )}
+
+              {/* Validation Notice Banner */}
+              {validationNotice && (
+                <div className="p-4 bg-[var(--color-danger-subtle)] border border-[var(--color-danger)]/30 rounded-lg flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 shrink-0 text-[var(--color-danger)]" />
+                  <p className="text-sm font-medium text-[var(--color-danger)]">{validationNotice}</p>
+                </div>
+              )}
+
+              {/* Team Member Cards */}
+              <div className="space-y-6">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="p-5 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-canvas-subtle)] space-y-4 relative">
+                    <div className="flex justify-between items-center border-b border-[var(--color-border-subtle)] pb-3">
+                      <h3 className="font-bold text-[var(--color-primary)] flex items-center gap-2">
+                        {index === 0 ? (
+                          <>
+                            Team Leader
+                            <span className="text-xs bg-[var(--color-primary)] text-white px-2 py-0.5 rounded-full font-normal">Leader</span>
+                          </>
+                        ) : (
+                          `Team Member ${index + 1}`
+                        )}
+                        {index >= 3 && (
+                          <span className="text-xs bg-[var(--color-ink-tertiary)]/10 text-[var(--color-ink-secondary)] px-2 py-0.5 rounded-full font-normal">Optional</span>
+                        )}
+                      </h3>
+
+                      {index >= 3 && fields.length > 3 && (
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => removeMember(index)}
+                          className="text-[var(--color-danger)] hover:bg-[var(--color-danger-subtle)] gap-1 h-8 px-2"
+                        >
+                          <Trash2 className="w-4 h-4" /> Remove
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField label="Full Name" required error={errors.members?.[index]?.full_name?.message}>
+                        <Controller name={`members.${index}.full_name`} control={control} render={({ field }) => <Input placeholder="Full Name" {...field} />} />
+                      </FormField>
+                      
+                      <FormField label="Gender" required error={errors.members?.[index]?.gender?.message}>
+                         <Controller 
+                           name={`members.${index}.gender`} 
+                           control={control} 
+                           render={({ field }) => (
+                             <Select value={field.value} onChange={field.onChange}>
+                               <option value="male">Male</option>
+                               <option value="female">Female</option>
+                               <option value="other">Other</option>
+                             </Select>
+                           )}
+                         />
+                      </FormField>
+                      
+                      <FormField label="Email Address" required error={errors.members?.[index]?.email?.message}>
+                        <Controller name={`members.${index}.email`} control={control} render={({ field }) => <Input type="email" placeholder="Email Address" {...field} />} />
+                      </FormField>
+
+                      <FormField label="Phone Number" required error={errors.members?.[index]?.phone?.message}>
+                        <Controller name={`members.${index}.phone`} control={control} render={({ field }) => <Input type="tel" placeholder="Phone Number" {...field} value={field.value || ''} />} />
+                      </FormField>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add Member Button */}
+              {fields.length < 6 ? (
+                <div className="pt-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={addMember}
+                    className="w-full sm:w-auto gap-2"
+                  >
+                    <Plus className="w-4 h-4" /> Add Team Member ({fields.length}/6)
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-[var(--color-ink-tertiary)] italic">Maximum team size of 6 members reached.</p>
+              )}
             </div>
           )}
 
-          {/* Step 2: Team Members */}
+          {/* Step 2: Problem Statement & Presentation (Combined Step) */}
           {currentStepIndex === 1 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Team Members (Exactly 6 required)</h2>
-                <span className="text-sm text-[var(--color-warning)] font-medium">
-                  At least 2 female members mandatory
-                </span>
+              <div>
+                <h2 className="text-xl font-bold mb-1">Problem Statement & Presentation</h2>
+                <p className="text-sm text-[var(--color-ink-secondary)]">
+                  Describe your problem statement and proposed approach, and upload your team&apos;s presentation slide deck.
+                </p>
               </div>
-              
-              {fields.map((field, index) => (
-                <div key={field.id} className="p-4 rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-canvas-subtle)] space-y-4">
-                  <div className="flex justify-between items-center mb-2 border-b border-[var(--color-border-subtle)] pb-2">
-                    <h3 className="font-semibold text-[var(--color-primary)]">
-                      Member {index + 1} {index === 0 && <span className="ml-2 text-xs bg-[var(--color-primary)] text-white px-2 py-0.5 rounded-full">Leader</span>}
-                    </h3>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField label="Full Name" required error={errors.members?.[index]?.full_name?.message}>
-                      <Controller name={`members.${index}.full_name`} control={control} render={({ field }) => <Input placeholder="Full Name" {...field} />} />
-                    </FormField>
-                    
-                    <FormField label="Gender" required error={errors.members?.[index]?.gender?.message}>
-                       <Controller 
-                         name={`members.${index}.gender`} 
-                         control={control} 
-                         render={({ field }) => (
-                           <Select value={field.value} onChange={field.onChange}>
-                         <option value="male">Male</option>
-                         <option value="female">Female</option>
-                         <option value="other">Other</option>
-                       </Select>
-                         )}
-                       />
-                    </FormField>
-                    
-                    <FormField label="Email Address" required error={errors.members?.[index]?.email?.message}>
-                      <Controller name={`members.${index}.email`} control={control} render={({ field }) => <Input type="email" placeholder="Email Address" {...field} />} />
-                    </FormField>
-
-                    <FormField label="Phone Number" required error={errors.members?.[index]?.phone?.message}>
-                      <Controller name={`members.${index}.phone`} control={control} render={({ field }) => <Input type="tel" placeholder="Phone Number" {...field} value={field.value || ''} />} />
-                    </FormField>
-                  </div>
+              {/* Validation Notice Banner */}
+              {validationNotice && (
+                <div className="p-4 bg-[var(--color-danger-subtle)] border border-[var(--color-danger)]/30 rounded-lg flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 shrink-0 text-[var(--color-danger)]" />
+                  <p className="text-sm font-medium text-[var(--color-danger)]">{validationNotice}</p>
                 </div>
-              ))}
-            </div>
-          )}
+              )}
 
-          {/* Step 3: Problem Statement */}
-          {currentStepIndex === 2 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-              <h2 className="text-xl font-bold mb-4">Problem Statement</h2>
+              {/* Problem Statement Input */}
               <FormField
-                label="Select Problem Statement"
-                error={errors.problem_statement_id?.message}
+                label="Problem Statement & Proposed Solution"
+                error={errors.solution_summary?.message}
                 required
               >
                 <Controller
-                  name="problem_statement_id"
+                  name="solution_summary"
                   control={control}
                   render={({ field }) => (
-                    <SearchableSelect 
-                       value={field.value} 
-                       onChange={field.onChange}
-                       error={!!errors.problem_statement_id}
-                       options={problemStatements.map(ps => ({
-                         value: ps.id,
-                         label: ps.ps_id,
-                         subLabel: ps.title,
-                         searchTerms: [ps.organization, ps.theme].filter(Boolean)
-                       }))}
-                       placeholder="Search by ID, title, organization, or theme..."
+                    <Textarea 
+                      placeholder="Type your problem statement, solution description, key innovation, and proposed technology stack here..." 
+                      rows={8} 
+                      {...field} 
                     />
                   )}
                 />
               </FormField>
-            </div>
-          )}
 
-          {/* Step 4: Idea Details & PPT */}
-          {currentStepIndex === 3 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-              <h2 className="text-xl font-bold mb-4">Idea & Presentation</h2>
-              
-              <FormField label="Idea Title" error={errors.idea_title?.message} required>
-                <Controller name="idea_title" control={control} render={({ field }) => <Input placeholder="Title of your solution" {...field} />} />
-              </FormField>
+              {/* Presentation Upload Section */}
+              <div className="space-y-3 border-t border-[var(--color-border-subtle)] pt-6">
+                <div>
+                  <h3 className="text-base font-bold mb-1">Upload Presentation Deck or Document</h3>
+                  <p className="text-xs text-[var(--color-ink-secondary)]">
+                    Upload your presentation slide deck or document in PDF, PPTX, PNG, or JPG format (max 50MB).
+                  </p>
+                </div>
 
-              <FormField label="Solution Summary" error={errors.solution_summary?.message} required>
-                <Controller name="solution_summary" control={control} render={({ field }) => <Textarea placeholder="Brief summary of your approach" rows={4} {...field} />} />
-              </FormField>
-
-              <FormField label="Key Innovation" error={errors.key_innovation?.message}>
-                <Controller name="key_innovation" control={control} render={({ field }) => <Input placeholder="What makes your idea unique?" {...field} value={field.value || ''} />} />
-              </FormField>
-
-              <FormField label="Proposed Technology Stack" error={errors.proposed_technology?.message}>
-                <Controller name="proposed_technology" control={control} render={({ field }) => <Input placeholder="e.g. React, Python, PostgreSQL" {...field} value={field.value || ''} />} />
-              </FormField>
-
-              <div className="mt-8 border-t border-[var(--color-border-subtle)] pt-6">
-                <h3 className="font-semibold mb-4">Upload Presentation (PDF or PPTX, max 50MB)</h3>
                 {!fileMetadata ? (
-                  <div className="border-2 border-dashed border-[var(--color-border-subtle)] rounded-lg p-8 text-center hover:bg-[var(--color-canvas-subtle)] transition-colors relative cursor-pointer">
-                    <input type="file" accept=".pdf,.pptx" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
-                    <Upload className="w-8 h-8 text-[var(--color-primary)] mx-auto mb-3" />
+                  <div className="border-2 border-dashed border-[var(--color-border-subtle)] rounded-lg p-6 text-center hover:bg-[var(--color-canvas-subtle)] transition-colors relative cursor-pointer">
+                    <input type="file" accept=".pdf,.pptx,.png,.jpg,.jpeg,.webp" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                    <Upload className="w-8 h-8 text-[var(--color-primary)] mx-auto mb-2" />
                     <p className="text-sm font-medium text-[var(--color-ink)]">Click or drag file to upload</p>
-                    <p className="text-xs text-[var(--color-ink-tertiary)] mt-1">Official SIH template format only</p>
-                    {uploadProgress > 0 && <p className="mt-3 text-sm text-[var(--color-primary)]">Uploading: {uploadProgress}%</p>}
+                    <p className="text-xs text-[var(--color-ink-tertiary)] mt-1">Allowed formats: .pdf, .pptx, .png, .jpg, .jpeg, .webp (max 50MB)</p>
+                    {uploadProgress > 0 && <p className="mt-3 text-sm text-[var(--color-primary)] font-medium">Uploading: {uploadProgress}%</p>}
                   </div>
                 ) : (
                   <div className="flex items-center justify-between p-4 bg-[var(--color-success-subtle)] rounded-lg border border-[var(--color-success)]">
@@ -411,22 +530,49 @@ export function RegistrationWizard({
             </div>
           )}
 
-          {/* Step 5: Review */}
-          {currentStepIndex === 4 && (
+          {/* Step 3: Review & Submit */}
+          {currentStepIndex === 2 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
               <h2 className="text-xl font-bold mb-4">Review Your Registration</h2>
-              <div className="p-4 bg-[var(--color-canvas-subtle)] rounded-lg border border-[var(--color-border-subtle)] text-sm space-y-2">
-                <p><strong>Team Name:</strong> {watch('team_name')}</p>
-                <p><strong>Leader:</strong> {watch('members.0.full_name')} ({watch('members.0.email')})</p>
-                <p><strong>Problem Statement:</strong> {problemStatements.find(p => p.id === watch('problem_statement_id'))?.ps_id || watch('problem_statement_id')}</p>
-                <p><strong>Idea Title:</strong> {watch('idea_title')}</p>
-                <p><strong>Presentation Uploaded:</strong> {fileMetadata ? 'Yes' : 'No'}</p>
+              
+              <div className="p-5 bg-[var(--color-canvas-subtle)] rounded-lg border border-[var(--color-border-subtle)] text-sm space-y-4">
+                <div>
+                  <p className="text-xs font-semibold text-[var(--color-ink-tertiary)] uppercase tracking-wider">Team Name</p>
+                  <p className="text-base font-bold text-[var(--color-primary)]">{watch('team_name')}</p>
+                </div>
+
+                <div className="border-t border-[var(--color-border-subtle)] pt-3">
+                  <p className="text-xs font-semibold text-[var(--color-ink-tertiary)] uppercase tracking-wider mb-2">Team Members ({watchedMembers.length})</p>
+                  <div className="space-y-2">
+                    {watchedMembers.map((m, i) => (
+                      <div key={i} className="flex justify-between items-center text-sm py-1 border-b border-[var(--color-border-subtle)]/50 last:border-0">
+                        <span>
+                          <strong>{i === 0 ? 'Leader' : `Member ${i + 1}`}:</strong> {m.full_name || 'N/A'} ({m.gender})
+                        </span>
+                        <span className="text-xs text-[var(--color-ink-secondary)]">{m.email}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-[var(--color-border-subtle)] pt-3">
+                  <p className="text-xs font-semibold text-[var(--color-ink-tertiary)] uppercase tracking-wider">Problem Statement & Solution</p>
+                  <p className="text-sm text-[var(--color-ink)] mt-1 whitespace-pre-wrap line-clamp-4">{watch('solution_summary')}</p>
+                </div>
+
+                <div className="border-t border-[var(--color-border-subtle)] pt-3 flex justify-between items-center">
+                  <span className="text-xs font-semibold text-[var(--color-ink-tertiary)] uppercase tracking-wider">Presentation File Uploaded</span>
+                  <span className={`font-semibold ${fileMetadata ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'}`}>
+                    {fileMetadata ? 'Yes' : 'No'}
+                  </span>
+                </div>
               </div>
+
               <p className="text-sm text-[var(--color-ink-secondary)]">By submitting, you confirm that your team meets all the rules and regulations of the internal hackathon.</p>
             </div>
           )}
 
-          {/* Navigation */}
+          {/* Navigation Controls */}
           <div className="flex justify-between items-center pt-6 mt-8 border-t border-[var(--color-border-subtle)]">
             <Button
               type="button"

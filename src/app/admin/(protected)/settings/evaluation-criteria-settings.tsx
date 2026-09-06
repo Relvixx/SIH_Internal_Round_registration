@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardHeader } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -156,7 +156,7 @@ export function EvaluationCriteriaSettings({ criteria }: { criteria: Criteria[] 
             <Checkbox 
               id="isActive" 
               checked={isActive} 
-              onChange={(e: any) => setIsActive(e.target.checked)} 
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setIsActive(e.target.checked)} 
             />
             <label htmlFor="isActive" className="text-body-sm text-[var(--color-ink)] cursor-pointer">Active (use in evaluations)</label>
           </div>

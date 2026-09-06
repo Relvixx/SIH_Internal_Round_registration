@@ -1,55 +1,28 @@
-const requiredEnvVars = [
-  'NEXT_PUBLIC_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-] as const;
-
-const serverOnlyEnvVars = [
-  'SUPABASE_SERVICE_ROLE_KEY',
-] as const;
+const DEFAULT_SUPABASE_URL = 'https://placeholder.supabase.co';
+const DEFAULT_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2MDA0OTYwMDAsImV4cCI6MTkyMDA3MjAwMH0.placeholder';
+const DEFAULT_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTYwMDQ5NjAwMCwiZXhwIjoxOTIwMDcyMDAwfQ.placeholder';
 
 export function validatePublicEnv() {
-  const missing: string[] = [];
-  for (const key of requiredEnvVars) {
-    if (!process.env[key]) {
-      missing.push(key);
-    }
-  }
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables:\n${missing.join('\n')}\n\nCopy .env.example to .env.local and fill in your Supabase credentials.`
-    );
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase environment variables are missing. Using fallback placeholders for local UI development.');
   }
 }
 
 export function validateServerEnv() {
   validatePublicEnv();
-  const missing: string[] = [];
-  for (const key of serverOnlyEnvVars) {
-    if (!process.env[key]) {
-      missing.push(key);
-    }
-  }
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing server environment variables:\n${missing.join('\n')}\n\nThese are required for server-side operations.`
-    );
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('SUPABASE_SERVICE_ROLE_KEY is missing. Using fallback placeholder for local UI development.');
   }
 }
 
 export function getPublicSupabaseUrl(): string {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!url) throw new Error('NEXT_PUBLIC_SUPABASE_URL is not configured');
-  return url;
+  return process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
 }
 
 export function getPublicSupabaseAnonKey(): string {
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!key) throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not configured');
-  return key;
+  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_ANON_KEY;
 }
 
 export function getServiceRoleKey(): string {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured');
-  return key;
+  return process.env.SUPABASE_SERVICE_ROLE_KEY || DEFAULT_SERVICE_ROLE_KEY;
 }

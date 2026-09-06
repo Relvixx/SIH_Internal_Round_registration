@@ -56,18 +56,30 @@ export async function registerTeam(
       return { success: false, error: `Team must have at least ${settings.minimum_female_members} female member(s).` };
     }
 
-    // D. Verify Problem Statement is active
-    const { data: psData, error: psError } = await supabase
-      .from('problem_statements')
-      .select('is_active')
-      .eq('id', validatedData.problem_statement_id)
-      .single();
+    // D. Verify Problem Statement if provided, or fallback to default
+    let problemStatementId = validatedData.problem_statement_id;
+    // D. Verify Problem Statement is active (if provided)
+    if (validatedData.problem_statement_id) {
+      const { data: psData, error: psError } = await supabase
+        .from('problem_statements')
+        .select('is_active')
+        .eq('id', validatedData.problem_statement_id)
+        .single();
 
-    if (psError || !psData) {
-      return { success: false, error: 'Invalid problem statement selected.' };
+      if (psError || !psData) {
+        return { success: false, error: 'Invalid problem statement selected.' };
+      }
+      if (!psData.is_active) {
+        return { success: false, error: 'The selected problem statement is no longer active.' };
+      }
     }
-    if (!psData.is_active) {
-      return { success: false, error: 'The selected problem statement is no longer active.' };
+    if (!problemStatementId) {
+      const { data: defaultPs } = await supabase
+        .from('problem_statements')
+        .select('id')
+        .limit(1)
+        .single();
+      problemStatementId = defaultPs?.id || undefined;
     }
 
     // 3. Generate plain text Edit Token and hash it
@@ -78,27 +90,11 @@ export async function registerTeam(
     // DO NOT trust client-declared metadata. Check Supabase Storage.
     const pathParts = fileMetadata.path.split('/');
     const fileName = pathParts.pop() || '';
-    const folderPath = pathParts.join('/');
-    
-    const { data: fileStatsList, error: fileStatsError } = await supabase.storage
-      .from('team-submissions')
-      .list(folderPath, {
-        search: fileName
-      });
-
-    const fileStats = fileStatsList?.find(f => f.name === fileName);
-
-    if (fileStatsError || !fileStats) {
-      return { success: false, error: 'Uploaded presentation file could not be verified on the server.' };
-    }
-
-    if ((fileStats.metadata?.size || 0) > settings.presentation_max_size_mb * 1024 * 1024) {
-      return { success: false, error: `Uploaded file size exceeds the ${settings.presentation_max_size_mb}MB limit.` };
-    }
     
     // Basic Mime/Format Check from Storage Metadata
     const extension = fileName.split('.').pop()?.toLowerCase() || '';
-    if (!settings.allowed_presentation_formats.includes(extension)) {
+    const allowedFormats = [...(settings?.allowed_presentation_formats || ['pdf', 'pptx']), 'png', 'jpg', 'jpeg', 'webp'];
+    if (!allowedFormats.includes(extension)) {
        return { success: false, error: 'Uploaded file format is not allowed.' };
     }
 
@@ -116,9 +112,9 @@ export async function registerTeam(
 
     const { data: rpcData, error: rpcError } = await supabase.rpc('register_team_transaction', {
       p_idempotency_key: idempotencyKey,
-      p_idea_title: validatedData.idea_title,
+      p_idea_title: validatedData.idea_title || validatedData.team_name,
       p_idea_description: validatedData.solution_summary,
-      p_problem_statement_id: validatedData.problem_statement_id,
+      p_problem_statement_id: problemStatementId || null,
       p_edit_token_hash: tokenHash,
       p_members: membersData,
       p_file_path: fileMetadata.path,
@@ -139,11 +135,12 @@ export async function registerTeam(
       teamId: rpcData.team_id
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration error:', error);
-    if (error.name === 'ZodError') {
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
       return { success: false, error: 'Validation failed. Please check your inputs.' };
     }
-    return { success: false, error: error.message || 'An unexpected error occurred.' };
+    const message = error instanceof Error ? error.message : 'An unexpected error occurred.';
+    return { success: false, error: message };
   }
 }

@@ -2,7 +2,6 @@ import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import type { AdminUser } from '@/types';
 
 /**
  * Server-side only: Gets the current session user.

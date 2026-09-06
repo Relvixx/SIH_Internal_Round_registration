@@ -11,7 +11,27 @@ import { TEAM_STATUS_LABELS, TEAM_STATUS_VARIANTS, type TeamStatus } from '@/lib
 import { updateTeamStatus } from '@/app/actions/admin';
 import { useRouter } from 'next/navigation';
 
-export function SelectionClient({ teams }: { teams: any[] }) {
+interface SelectionTeam {
+  id: string;
+  registration_code: string;
+  idea_title: string;
+  total_score: number;
+  status: string;
+}
+
+function computeRanks(teams: SelectionTeam[]) {
+  const result: (SelectionTeam & { rank: number })[] = [];
+  let currentRank = 1;
+  for (let i = 0; i < teams.length; i++) {
+    if (i > 0 && teams[i].total_score < teams[i - 1].total_score) {
+      currentRank = i + 1;
+    }
+    result.push({ ...teams[i], rank: currentRank });
+  }
+  return result;
+}
+
+export function SelectionClient({ teams }: { teams: SelectionTeam[] }) {
   const router = useRouter();
   const [selectedTeams, setSelectedTeams] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<TeamStatus>('shortlisted');
@@ -42,7 +62,7 @@ export function SelectionClient({ teams }: { teams: any[] }) {
     let successCount = 0;
     
     for (const teamId of selectedTeams) {
-      const res = await updateTeamStatus({ team_id: teamId, status: bulkStatus as any });
+      const res = await updateTeamStatus({ team_id: teamId, status: bulkStatus as Exclude<TeamStatus, 'draft'> });
       if (res.success) successCount++;
     }
 
@@ -52,11 +72,13 @@ export function SelectionClient({ teams }: { teams: any[] }) {
     router.refresh();
   };
 
+  const teamsWithRanks = computeRanks(teams);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 p-4 bg-[var(--color-surface-50)] border border-[var(--color-border)] rounded-md">
         <span className="text-body-sm font-medium text-[var(--color-ink)]">Bulk Actions:</span>
-        <Select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value as any)} className="w-48">
+        <Select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value as TeamStatus)} className="w-48">
           <option value="eligible">Mark Eligible</option>
           <option value="shortlisted">Mark Shortlisted</option>
           <option value="waitlisted">Mark Waitlisted</option>
@@ -88,28 +110,18 @@ export function SelectionClient({ teams }: { teams: any[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(() => {
-              let currentRank = 1;
-              let previousScore: number | null = null;
-              
-              return teams.map((team, index) => {
-                if (previousScore !== null && team.total_score < previousScore) {
-                  currentRank = index + 1;
-                }
-                previousScore = team.total_score;
-                
-                return (
-                  <TableRow key={team.id}>
-                    <TableCell>
-                      <Checkbox 
-                        checked={selectedTeams.has(team.id)} 
-                        onChange={() => toggleOne(team.id)}
-                        aria-label={`Select team ${team.registration_code}`}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-semibold text-[var(--color-ink-secondary)]">#{currentRank}</span>
-                    </TableCell>
+            {teamsWithRanks.map((team) => (
+              <TableRow key={team.id}>
+                <TableCell>
+                  <Checkbox 
+                    checked={selectedTeams.has(team.id)} 
+                    onChange={() => toggleOne(team.id)}
+                    aria-label={`Select team ${team.registration_code}`}
+                  />
+                </TableCell>
+                <TableCell>
+                  <span className="font-semibold text-[var(--color-ink-secondary)]">#{team.rank}</span>
+                </TableCell>
                 <TableCell className="font-medium text-[var(--color-ink)]">
                   <Link href={`/admin/teams/${team.id}`} className="hover:underline">
                     {team.registration_code}
@@ -133,10 +145,8 @@ export function SelectionClient({ teams }: { teams: any[] }) {
                     View
                   </Link>
                 </TableCell>
-                  </TableRow>
-                );
-              });
-            })()}
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>

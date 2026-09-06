@@ -12,14 +12,6 @@ export function TeamsFilter() {
   
   const [search, setSearch] = useState(searchParams.get('search') || '');
 
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      createQueryString('search', search);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [search]);
-
   const createQueryString = useCallback(
     (name: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -33,6 +25,14 @@ export function TeamsFilter() {
     },
     [searchParams, router]
   );
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      createQueryString('search', search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search, createQueryString]);
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 mb-6">

@@ -4,10 +4,9 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormField } from '@/components/ui/form-field';
-import { Card, CardHeader } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
 import { SectionHeading } from '@/components/ui/page-header';
 import {
@@ -16,14 +15,10 @@ import {
   FileText,
   AlertTriangle,
   CheckCircle2,
-  Calendar,
-  Settings,
-  Users,
-  Presentation,
 } from 'lucide-react';
 import { updateEventSettings, uploadTemplate } from '@/features/event-settings/actions';
 import type { EventSettings } from '@/types';
-import { formatDateTime, formatFileSize } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 
 interface SettingsFormProps {
   settings: EventSettings;

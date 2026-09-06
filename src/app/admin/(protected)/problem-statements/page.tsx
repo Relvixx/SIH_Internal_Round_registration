@@ -10,6 +10,18 @@ import { CSVImport } from './csv-import';
 
 export const metadata: Metadata = { title: 'Problem Statements' };
 
+interface RawProblemStatement {
+  id: string;
+  ps_id: string;
+  title: string;
+  organization: string;
+  theme: string;
+  category: string;
+  problem_type: string;
+  is_active: boolean;
+  teams?: { id: string }[];
+}
+
 async function getProblemStatements() {
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -17,12 +29,12 @@ async function getProblemStatements() {
     .select('*, teams(id)')
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching problem statements:', error);
+  if (error || !data) {
+    if (error) console.error('Error fetching problem statements:', error);
     return [];
   }
   
-  return data.map((ps: any) => ({
+  return data.map((ps: RawProblemStatement) => ({
     ...ps,
     selected_by_count: ps.teams ? ps.teams.length : 0
   }));

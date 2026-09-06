@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { TEAM_STATUSES, MEMBER_ROLES, GENDERS, PROBLEM_TYPES, ADMIN_ROLES } from '@/lib/constants';
+import { MEMBER_ROLES, GENDERS, PROBLEM_TYPES } from '@/lib/constants';
 
 // ── Admin Login ──
 export const adminLoginSchema = z.object({
@@ -62,13 +62,18 @@ export type TeamMemberInput = z.infer<typeof teamMemberSchema>;
 // ── Team Registration ──
 export const teamRegistrationSchema = z.object({
   team_name: z.string().min(1, 'Team name is required').max(200),
-  problem_statement_id: z.string().uuid('Select a problem statement'),
-  idea_title: z.string().min(1, 'Idea title is required').max(300),
-  solution_summary: z.string().min(1, 'Solution summary is required').max(2000),
-  key_innovation: z.string().max(1000).nullable(),
-  proposed_technology: z.string().max(1000).nullable(),
-  members: z.array(teamMemberSchema),
-});
+  problem_statement_id: z.string().optional(),
+  idea_title: z.string().optional(),
+  solution_summary: z.string().min(1, 'Problem statement and solution description is required').max(5000),
+  key_innovation: z.string().max(1000).optional().nullable(),
+  proposed_technology: z.string().max(1000).optional().nullable(),
+  members: z.array(teamMemberSchema)
+    .min(3, 'A team must have at least 3 members.')
+    .max(6, 'A team cannot have more than 6 members.'),
+}).refine(
+  (data) => data.members.filter((m) => m.gender === 'female').length >= 2,
+  { message: 'Your team must include at least 2 female members to proceed.', path: ['members'] }
+);
 export type TeamRegistrationInput = z.infer<typeof teamRegistrationSchema>;
 
 // ── File Metadata ──

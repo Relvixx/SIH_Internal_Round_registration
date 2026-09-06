@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, ShieldCheck, FileText, ChevronRight } from 'lucide-react';
+import { ArrowRight, ShieldCheck, FileText } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'MET BKC SIH Internal Hackathon',

@@ -12,8 +12,6 @@ import {
   Settings,
   LogOut,
   Menu,
-  X,
-  ChevronRight,
 } from 'lucide-react';
 import { Logo } from '@/components/branding/logo';
 import { Sheet } from '@/components/ui/sheet';

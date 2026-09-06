@@ -42,7 +42,7 @@ export function TeamStatusActions({
 
     const res = await updateTeamStatus({ 
       team_id: teamId, 
-      status: newStatus as any,
+      status: newStatus as Exclude<TeamStatus, 'draft'>,
       correction_note: newStatus === 'needs_correction' ? correctionNote : undefined
     });
 
@@ -97,7 +97,7 @@ export function TeamStatusActions({
             <div className="flex gap-2">
               <Select 
                 value={pptStatus} 
-                onChange={(e) => setPptStatus(e.target.value as any)}
+                onChange={(e) => setPptStatus(e.target.value as 'not_reviewed' | 'verified' | 'needs_correction')}
                 disabled={isPPTUpdating}
                 className="flex-1"
               >

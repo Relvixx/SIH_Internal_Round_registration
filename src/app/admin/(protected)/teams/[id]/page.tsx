@@ -14,22 +14,23 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Team Details' };
 
-export default async function TeamDetailPage({ params }: { params: { id: string } }) {
+export default async function TeamDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   let team, members, presentation, notes, criteria, existingEvaluations, duplicates;
 
   try {
-    const detail = await getAdminTeamDetail(params.id);
+    const detail = await getAdminTeamDetail(resolvedParams.id);
     team = detail.team;
     members = detail.members;
     presentation = detail.presentation;
-    duplicates = await getDuplicateParticipants(params.id);
+    duplicates = await getDuplicateParticipants(resolvedParams.id);
     
     // Fetch Admin Notes
     const supabase = createAdminClient();
     const notesRes = await supabase
       .from('admin_notes')
       .select('*, author:admin_users(email)')
-      .eq('team_id', params.id)
+      .eq('team_id', resolvedParams.id)
       .order('created_at', { ascending: false });
     notes = notesRes.data;
 
@@ -45,7 +46,7 @@ export default async function TeamDetailPage({ params }: { params: { id: string 
     const evalRes = await supabase
       .from('team_evaluations')
       .select('*')
-      .eq('team_id', params.id);
+      .eq('team_id', resolvedParams.id);
     existingEvaluations = evalRes.data;
 
   } catch (error) {
@@ -142,7 +143,7 @@ export default async function TeamDetailPage({ params }: { params: { id: string 
               <div className="p-4 pt-0">
                 <TeamStatusActions 
                   teamId={team.id} 
-                  currentStatus={team.status as any} 
+                  currentStatus={team.status} 
                   currentPPTStatus={team.ppt_review_status} 
                 />
               </div>

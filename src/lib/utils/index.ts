@@ -1,5 +1,3 @@
-import { clsx, type ClassValue } from 'clsx';
-
 /**
  * Merges class names, filtering out falsy values.
  * Lightweight alternative to clsx for simple cases.
