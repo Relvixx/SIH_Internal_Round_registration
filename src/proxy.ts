@@ -2,7 +2,13 @@ import { type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 export async function proxy(request: NextRequest) {
-  return await updateSession(request);
+  try {
+    return await updateSession(request);
+  } catch (error) {
+    console.error('Proxy Error:', error);
+    // Return a basic response instead of crashing
+    return new Response(String(error), { status: 500 });
+  }
 }
 
 export const config = {
