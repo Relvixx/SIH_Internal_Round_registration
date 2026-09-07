@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FormField } from '@/components/ui/form-field';
 import { Select } from '@/components/ui/select';
-import { Upload, X, AlertCircle, CheckCircle2, AlertTriangle, ExternalLink, Home, Plus, Trash2, Users, FileText } from 'lucide-react';
+import { Upload, X, AlertCircle, CheckCircle2, AlertTriangle, ExternalLink, Home, Plus, Trash2, Users, FileText, MessageCircle } from 'lucide-react';
 import { registerTeam } from '@/app/actions/register';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -302,6 +302,33 @@ export function RegistrationWizard({
                     <ExternalLink className="w-4 h-4" /> Go to Edit Page
                   </Button>
                 </Link>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card padding="lg" className="bg-[#25D366]/10 border-[#25D366]/30 mb-8">
+          <div className="flex items-start gap-4">
+            <MessageCircle className="w-6 h-6 text-[#25D366] shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-lg font-bold text-[var(--color-ink)] mb-1">
+                Join our WhatsApp Group
+              </h3>
+              <p className="text-body-sm text-[var(--color-ink-secondary)] mb-4">
+                Please join the official WhatsApp group for all important updates and announcements regarding the SIH Internal Hackathon.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-2">
+                <a 
+                  href="https://chat.whatsapp.com/CbAzxPxDjPR4RgYND2Z2iJ?s=sw&p=a&mlu=4&ilr=4" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto"
+                >
+                  <Button className="w-full sm:w-auto bg-[#25D366] hover:bg-[#1DA851] text-white border-transparent gap-2">
+                    Join WhatsApp Group
+                  </Button>
+                </a>
               </div>
             </div>
           </div>
