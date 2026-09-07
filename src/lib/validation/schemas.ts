@@ -52,10 +52,10 @@ export const teamMemberSchema = z.object({
   full_name: z.string().min(1, 'Full name is required').max(200),
   gender: z.enum(GENDERS),
   enrollment_number: z.string().max(50).nullable(),
-  department: z.string().max(200).nullable(),
-  year_or_semester: z.string().max(50).nullable(),
+  department: z.string().min(1, 'Branch is required').max(200),
+  year_or_semester: z.string().min(1, 'Year is required').max(50),
   email: z.string().min(1, 'Email is required').email('Enter a valid email'),
-  phone: z.string().max(20).nullable(),
+  phone: z.string().min(1, 'Phone is required').max(20),
 });
 export type TeamMemberInput = z.infer<typeof teamMemberSchema>;
 

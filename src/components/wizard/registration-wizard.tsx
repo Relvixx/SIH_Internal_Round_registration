@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { teamRegistrationSchema, TeamRegistrationInput } from '@/lib/validation/schemas';
 import { StepProgress } from './step-progress';
@@ -85,8 +85,8 @@ export function RegistrationWizard({
   const { control, handleSubmit, trigger, watch, formState: { errors } } = form;
   const { fields, append, remove } = useFieldArray({ control, name: 'members' });
 
-  const watchedMembers = watch('members') || [];
-  const femaleCount = watchedMembers.filter(m => m?.gender === 'female').length;
+  const watchedMembers = useWatch({ control, name: 'members', defaultValue: [] });
+  const femaleCount = watchedMembers.filter((m: any) => m?.gender === 'female').length;
   const teamSize = fields.length;
 
   const addMember = () => {
@@ -130,6 +130,13 @@ export function RegistrationWizard({
       }
       if (femaleCount < 2) {
         setValidationNotice('Your team must include at least 2 female members to proceed.');
+        return;
+      }
+
+      const emails = watchedMembers.map((m: any) => m.email?.toLowerCase().trim()).filter(Boolean);
+      const uniqueEmails = new Set(emails);
+      if (uniqueEmails.size !== emails.length) {
+        setValidationNotice('Each team member must have a unique email address. Please check for duplicates.');
         return;
       }
       if (!isValidForm) return;
@@ -455,10 +462,42 @@ export function RegistrationWizard({
                            name={`members.${index}.gender`} 
                            control={control} 
                            render={({ field }) => (
-                             <Select value={field.value} onChange={field.onChange}>
+                             <Select {...field}>
                                <option value="male">Male</option>
                                <option value="female">Female</option>
                                <option value="other">Other</option>
+                             </Select>
+                           )}
+                         />
+                      </FormField>
+
+                      <FormField label="Branch" required error={errors.members?.[index]?.department?.message}>
+                         <Controller 
+                           name={`members.${index}.department`} 
+                           control={control} 
+                           render={({ field }) => (
+                             <Select {...field} value={field.value || ""}>
+                               <option value="" disabled>Select Branch</option>
+                               <option value="Computer Science and Design">Computer Science and Design</option>
+                               <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+                               <option value="Automation and Robotics">Automation and Robotics</option>
+                               <option value="Electrical and Telecommunication Engineering">Electrical and Telecommunication Engineering</option>
+                               <option value="Civil and Environmental Engineering">Civil and Environmental Engineering</option>
+                             </Select>
+                           )}
+                         />
+                      </FormField>
+
+                      <FormField label="Year" required error={errors.members?.[index]?.year_or_semester?.message}>
+                         <Controller 
+                           name={`members.${index}.year_or_semester`} 
+                           control={control} 
+                           render={({ field }) => (
+                             <Select {...field} value={field.value || ""}>
+                               <option value="" disabled>Select Year</option>
+                               <option value="First Year">First Year</option>
+                               <option value="Second Year">Second Year</option>
+                               <option value="Third Year">Third Year</option>
                              </Select>
                            )}
                          />

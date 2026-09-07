@@ -127,7 +127,7 @@ export async function registerTeam(
 
     if (rpcError) {
       console.error('RPC Error:', rpcError);
-      return { success: false, error: 'Failed to complete registration due to a server error.' };
+      return { success: false, error: 'Server error: ' + (rpcError.message || JSON.stringify(rpcError)) };
     }
 
     return { 
@@ -138,11 +138,7 @@ export async function registerTeam(
     };
 
   } catch (error: unknown) {
-    console.error('Registration error:', error);
-    if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
-      return { success: false, error: 'Validation failed. Please check your inputs.' };
-    }
-    const message = error instanceof Error ? error.message : 'An unexpected error occurred.';
-    return { success: false, error: message };
+    console.error('Registration Error:', error);
+    return { success: false, error: 'Unexpected server error: ' + (error instanceof Error ? error.message : String(error)) };
   }
 }
