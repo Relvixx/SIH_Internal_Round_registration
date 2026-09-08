@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { FormField } from '@/components/ui/form-field';
 import { Select } from '@/components/ui/select';
 import { Upload, X, AlertCircle, CheckCircle2, AlertTriangle, ExternalLink, Home, Plus, Trash2, Users, FileText, MessageCircle } from 'lucide-react';
+import { OfficialSelector } from '@/components/problem-statement/OfficialSelector';
 import { registerTeam } from '@/app/actions/register';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -82,7 +83,7 @@ export function RegistrationWizard({
     }
   });
 
-  const { control, handleSubmit, trigger, watch, formState: { errors } } = form;
+  const { control, handleSubmit, trigger, watch, setValue, formState: { errors } } = form;
   const { fields, append, remove } = useFieldArray({ control, name: 'members' });
 
   const watchedMembers = useWatch({ control, name: 'members', defaultValue: [] });
@@ -128,10 +129,10 @@ export function RegistrationWizard({
         setValidationNotice('A team cannot have more than 6 members.');
         return;
       }
-      if (femaleCount < 2) {
-        setValidationNotice('Your team must include at least 2 female members to proceed.');
-        return;
-      }
+      if (femaleCount < 1) {
+          setValidationNotice('Your team must include at least 1 female member to proceed.');
+          return;
+        }
 
       const emails = watchedMembers.map((m: any) => m.email?.toLowerCase().trim()).filter(Boolean);
       const uniqueEmails = new Set(emails);
@@ -371,7 +372,7 @@ export function RegistrationWizard({
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
               <div>
                 <h2 className="text-xl font-bold mb-2">Team Details</h2>
-                <p className="text-sm text-[var(--color-ink-secondary)]">Enter your team name and member details (Min 3, Max 6 members. Must include at least 2 female members).</p>
+                <p className="text-sm text-[var(--color-ink-secondary)]">Enter your team name and member details (Min 3, Max 6 members. Must include at least 1 female member).</p>
               </div>
 
               {/* Team Name */}
@@ -397,20 +398,20 @@ export function RegistrationWizard({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-sm">
-                    Female Members: <span className={femaleCount < 2 ? "text-[var(--color-warning-700)] font-bold" : "text-[var(--color-success)] font-bold"}>{femaleCount}</span> / 2 required
+                    Female Members: <span className={femaleCount < 1 ? "text-[var(--color-warning-700)] font-bold" : "text-[var(--color-success)] font-bold"}>{femaleCount}</span> / 1 required
                   </span>
                 </div>
               </div>
 
               {/* Female Count Requirement Alert */}
-              {femaleCount < 2 && (
-                <div className="p-4 bg-[var(--color-warning-subtle)] border border-[var(--color-warning)]/30 rounded-lg flex items-center gap-3">
-                  <AlertTriangle className="w-5 h-5 shrink-0 text-[var(--color-warning)]" />
-                  <p className="text-sm font-medium text-[var(--color-ink)]">
-                    Your team must include at least 2 female members to proceed.
-                  </p>
-                </div>
-              )}
+              {femaleCount < 1 && (
+                  <div className="p-4 bg-[var(--color-warning-subtle)] border border-[var(--color-warning)]/30 rounded-lg flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 shrink-0 text-[var(--color-warning)]" />
+                    <p className="text-sm font-medium text-[var(--color-ink)]">
+                      Your team must include at least 1 female member to proceed.
+                    </p>
+                  </div>
+                )}
 
               {/* Validation Notice Banner */}
               {validationNotice && (
@@ -538,6 +539,7 @@ export function RegistrationWizard({
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
               <div>
                 <h2 className="text-xl font-bold mb-1">Problem Statement & Presentation</h2>
+                 <OfficialSelector setValue={setValue} />
                 <p className="text-sm text-[var(--color-ink-secondary)]">
                   Describe your problem statement and proposed approach, and upload your team&apos;s presentation slide deck.
                 </p>

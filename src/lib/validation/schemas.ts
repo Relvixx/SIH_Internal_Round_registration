@@ -71,8 +71,8 @@ export const teamRegistrationSchema = z.object({
     .min(3, 'A team must have at least 3 members.')
     .max(6, 'A team cannot have more than 6 members.'),
 }).refine(
-  (data) => data.members.filter((m) => m.gender === 'female').length >= 2,
-  { message: 'Your team must include at least 2 female members to proceed.', path: ['members'] }
+  (data) => data.members.filter((m) => m.gender === 'female').length >= 1,
+  { message: 'Your team must include at least 1 female member to proceed.', path: ['members'] }
 );
 export type TeamRegistrationInput = z.infer<typeof teamRegistrationSchema>;
 

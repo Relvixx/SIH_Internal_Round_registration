@@ -1,0 +1,26 @@
+[
+  {
+    "id": "1",
+    "ps_id": "PS001",
+    "title": "Smart Agriculture using IoT",
+    "organization": "Ministry of Agriculture",
+    "category": "Agriculture",
+    "theme": "Sustainability"
+  },
+  {
+    "id": "2",
+    "ps_id": "PS002",
+    "title": "AI-powered Healthcare Diagnostics",
+    "organization": "Health Ministry",
+    "category": "Healthcare",
+    "theme": "Artificial Intelligence"
+  },
+  {
+    "id": "3",
+    "ps_id": "PS003",
+    "title": "Renewable Energy Management System",
+    "organization": "Energy Ministry",
+    "category": "Energy",
+    "theme": "Renewable"
+  }
+]
