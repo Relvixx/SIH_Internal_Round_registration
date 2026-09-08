@@ -312,7 +312,7 @@ export function RegistrationWizard({
             </button>
           </div>
           <p className="text-xs text-[var(--color-ink-tertiary)] mt-3">
-            📌 Iss code ko save kar lo — yeh future correspondence ke liye zaroori hai.
+            📌 Please save this code. You will need it for all future correspondence.
           </p>
         </div>
 
@@ -325,7 +325,7 @@ export function RegistrationWizard({
             <div>
               <h3 className="font-bold text-sm text-[var(--color-ink)]">⚠️ Save Your Edit Link</h3>
               <p className="text-xs text-[var(--color-ink-secondary)] mt-0.5 leading-relaxed">
-                Yeh link sirf <strong>ek baar</strong> dikhega. Agar team members ya idea mein changes karne hain, toh yeh link chahiye hoga. Ise copy karke safe jagah save karo.
+                This link will only be shown <strong>once</strong>. If you need to update your team members or idea, you will need this link. Copy and save it somewhere safe.
               </p>
             </div>
           </div>
@@ -345,11 +345,12 @@ export function RegistrationWizard({
                 <><ExternalLink className="w-4 h-4" /> Copy Edit Link</>
               )}
             </button>
-            <Link href={`/edit?id=${successData.id}&token=${successData.token}`}>
-              <Button variant="outline" className="shrink-0 gap-2 h-[42px] rounded-xl border-amber-300 text-amber-700 hover:bg-amber-100">
-                Open Edit Page
-              </Button>
-            </Link>
+            <a 
+              href={`/edit?id=${successData.id}&token=${successData.token}`}
+              className="inline-flex items-center justify-center shrink-0 gap-2 h-[42px] px-4 rounded-xl border border-amber-300 text-amber-700 bg-transparent hover:bg-amber-100 text-sm font-semibold transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" /> Open Edit Page
+            </a>
           </div>
         </div>
 
@@ -362,7 +363,7 @@ export function RegistrationWizard({
             <div>
               <h3 className="font-bold text-sm text-[var(--color-ink)]">💬 Join WhatsApp Group</h3>
               <p className="text-xs text-[var(--color-ink-secondary)] mt-0.5 leading-relaxed">
-                Saari important updates aur announcements iss group par aayengi. Join karna zaroori hai!
+                All important updates and announcements will be shared in this group. Joining is mandatory!
               </p>
             </div>
           </div>
@@ -606,20 +607,20 @@ export function RegistrationWizard({
                 </div>
                 <div className="p-5 bg-[var(--color-canvas-subtle)] space-y-4">
                   <p className="text-sm text-[var(--color-ink-secondary)] leading-relaxed">
-                    Agar aapko apna problem statement nahi pata, toh neeche diye gaye link se official SIH website par jaakar apna problem statement choose karein.
+                    If you don't know which problem statement to choose, visit the official SIH website using the link below to browse all available problem statements.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-subtle)]">
                       <span className="w-6 h-6 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
-                      <p className="text-xs text-[var(--color-ink-secondary)] leading-relaxed">Neeche diye button par click karke <strong>SIH website</strong> kholein</p>
+                      <p className="text-xs text-[var(--color-ink-secondary)] leading-relaxed">Click the button below to open the <strong>official SIH website</strong></p>
                     </div>
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-subtle)]">
                       <span className="w-6 h-6 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
-                      <p className="text-xs text-[var(--color-ink-secondary)] leading-relaxed">Problem Statements mein se apni team ke liye ek <strong>topic choose</strong> karein</p>
+                      <p className="text-xs text-[var(--color-ink-secondary)] leading-relaxed">Browse the problem statements and <strong>choose a topic</strong> for your team</p>
                     </div>
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-subtle)]">
                       <span className="w-6 h-6 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
-                      <p className="text-xs text-[var(--color-ink-secondary)] leading-relaxed">Neeche form mein apna <strong>solution describe</strong> karein</p>
+                      <p className="text-xs text-[var(--color-ink-secondary)] leading-relaxed">Come back and <strong>describe your solution</strong> in the form below</p>
                     </div>
                   </div>
                   <a
@@ -671,7 +672,7 @@ export function RegistrationWizard({
                   <h3 className="font-bold text-base text-[var(--color-ink)]">Describe Your Solution</h3>
                 </div>
                 <p className="text-xs text-[var(--color-ink-tertiary)] pl-10">
-                  Problem statement ka title, aapka proposed solution, key innovation, aur technology stack — sab yahan likhein.
+                  Write your problem statement title, proposed solution, key innovation, and technology stack below.
                 </p>
                 <div className="pl-10">
                   <FormField
@@ -704,7 +705,7 @@ export function RegistrationWizard({
                   <h3 className="font-bold text-base text-[var(--color-ink)]">Upload Presentation</h3>
                 </div>
                 <p className="text-xs text-[var(--color-ink-tertiary)] pl-10">
-                  Apni team ki presentation file upload karein — PDF, PPTX, PNG, ya JPG format mein (max 50MB).
+                  Upload your team's presentation file in PDF, PPTX, PNG, or JPG format (max 50MB).
                 </p>
 
                 <div className="pl-10">
