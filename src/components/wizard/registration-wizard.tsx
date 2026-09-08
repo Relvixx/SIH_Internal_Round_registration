@@ -50,6 +50,7 @@ export function RegistrationWizard({
   const [submitError, setSubmitError] = useState<string>('');
   const [validationNotice, setValidationNotice] = useState<string>('');
   const [successData, setSuccessData] = useState<{ id: string; code: string; token: string } | null>(null);
+  const [copiedField, setCopiedField] = useState<'code' | 'link' | null>(null);
   const router = useRouter();
   const idempotencyKeyRef = useRef<string>('');
 
@@ -268,83 +269,119 @@ export function RegistrationWizard({
 
   if (successData) {
     const editUrl = `${window.location.origin}/edit?id=${successData.id}&token=${successData.token}`;
+    
+    const copyToClipboard = async (text: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopiedField(text === editUrl ? 'link' : 'code');
+        setTimeout(() => setCopiedField(null), 2500);
+      } catch { /* fallback: do nothing */ }
+    };
+
     return (
-      <div className="max-w-2xl mx-auto pb-20 animate-in fade-in slide-in-from-bottom-4">
-        <div className="mb-6">
-          <div className="w-16 h-16 bg-[var(--color-success-subtle)] rounded-full flex items-center justify-center mx-auto shadow-sm">
-            <CheckCircle2 className="w-8 h-8 text-[var(--color-success)]" />
-          </div>
-        </div>
-        <h1 className="text-3xl font-bold text-center mb-2">Registration Successful!</h1>
-        <p className="text-center text-[var(--color-ink-secondary)] mb-8">Your team has been successfully registered for the SIH Internal Hackathon.</p>
+      <div className="max-w-xl mx-auto pb-20 animate-in fade-in slide-in-from-bottom-4">
         
-        <Card padding="lg" className="border-2 border-[var(--color-primary-subtle)] text-center mb-6">
-          <p className="text-body text-[var(--color-ink-secondary)] mb-2">Your Registration Code</p>
-          <div className="inline-block px-6 py-3 bg-[var(--color-canvas-subtle)] border border-[var(--color-border)] rounded-lg">
-            <span className="text-3xl font-bold tracking-wider text-[var(--color-primary)]">
+        {/* ── Celebration Header ── */}
+        <div className="text-center mb-10">
+          <div className="relative inline-block mb-5">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center mx-auto shadow-lg shadow-emerald-200">
+              <CheckCircle2 className="w-10 h-10 text-white" />
+            </div>
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-xs animate-bounce shadow-sm">🎉</div>
+          </div>
+          <h1 className="text-3xl font-extrabold mb-2" style={{ letterSpacing: '-0.03em' }}>Registration Successful!</h1>
+          <p className="text-[var(--color-ink-secondary)] text-sm max-w-md mx-auto">
+            Congratulations! Your team has been successfully registered for the SIH Internal Hackathon.
+          </p>
+        </div>
+
+        {/* ── Registration Code Card ── */}
+        <div className="rounded-2xl border-2 border-[var(--color-primary)]/20 bg-gradient-to-b from-[var(--color-primary)]/[0.03] to-transparent p-6 text-center mb-5">
+          <p className="text-xs font-semibold text-[var(--color-ink-tertiary)] uppercase tracking-widest mb-3">Your Registration Code</p>
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-white border-2 border-[var(--color-primary)]/30 rounded-xl shadow-sm">
+            <span className="text-4xl font-black tracking-widest text-[var(--color-primary)]" style={{ letterSpacing: '0.12em' }}>
               {successData.code}
             </span>
+            <button
+              type="button"
+              onClick={() => copyToClipboard(successData.code)}
+              className="p-2 rounded-lg hover:bg-[var(--color-primary)]/10 transition-colors text-[var(--color-primary)]"
+              title="Copy code"
+            >
+              {copiedField === 'code' ? <CheckCircle2 className="w-5 h-5" /> : <ExternalLink className="w-5 h-5" />}
+            </button>
           </div>
-          <p className="text-sm mt-4 text-[var(--color-ink-tertiary)]">
-            Please save this code. You will need it for all future correspondence.
+          <p className="text-xs text-[var(--color-ink-tertiary)] mt-3">
+            📌 Iss code ko save kar lo — yeh future correspondence ke liye zaroori hai.
           </p>
-        </Card>
+        </div>
 
-        <Card padding="lg" className="bg-[var(--color-warning-subtle)] border-[var(--color-warning)]/20 mb-8">
-          <div className="flex items-start gap-4">
-            <AlertTriangle className="w-6 h-6 text-[var(--color-warning)] shrink-0 mt-0.5" />
+        {/* ── Edit Link Card ── */}
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 mb-5">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4.5 h-4.5 text-amber-600" />
+            </div>
             <div>
-              <h3 className="text-lg font-bold text-[var(--color-ink)] mb-1">
-                Save Your Edit Link!
-              </h3>
-              <p className="text-body-sm text-[var(--color-ink-secondary)] mb-4">
-                This is the <strong>ONLY</strong> time you will see this link. If you need to make changes to your team members or idea, you must use this specific link. Do not share it with anyone outside your team.
+              <h3 className="font-bold text-sm text-[var(--color-ink)]">⚠️ Save Your Edit Link</h3>
+              <p className="text-xs text-[var(--color-ink-secondary)] mt-0.5 leading-relaxed">
+                Yeh link sirf <strong>ek baar</strong> dikhega. Agar team members ya idea mein changes karne hain, toh yeh link chahiye hoga. Ise copy karke safe jagah save karo.
               </p>
-              
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex-1 bg-white border border-[var(--color-border-subtle)] rounded-md px-3 py-2 text-sm overflow-x-auto whitespace-nowrap font-mono text-[var(--color-ink)]">
-                  {editUrl}
-                </div>
-                <Link href={`/edit?id=${successData.id}&token=${successData.token}`}>
-                  <Button variant="outline" className="w-full sm:w-auto shrink-0 gap-2">
-                    <ExternalLink className="w-4 h-4" /> Go to Edit Page
-                  </Button>
-                </Link>
-              </div>
             </div>
           </div>
-        </Card>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => copyToClipboard(editUrl)}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                copiedField === 'link'
+                  ? 'bg-emerald-500 text-white shadow-md'
+                  : 'bg-amber-600 text-white hover:bg-amber-700 shadow-sm hover:shadow-md'
+              }`}
+            >
+              {copiedField === 'link' ? (
+                <><CheckCircle2 className="w-4 h-4" /> Link Copied!</>
+              ) : (
+                <><ExternalLink className="w-4 h-4" /> Copy Edit Link</>
+              )}
+            </button>
+            <Link href={`/edit?id=${successData.id}&token=${successData.token}`}>
+              <Button variant="outline" className="shrink-0 gap-2 h-[42px] rounded-xl border-amber-300 text-amber-700 hover:bg-amber-100">
+                Open Edit Page
+              </Button>
+            </Link>
+          </div>
+        </div>
 
-        <Card padding="lg" className="bg-[#25D366]/10 border-[#25D366]/30 mb-8">
-          <div className="flex items-start gap-4">
-            <MessageCircle className="w-6 h-6 text-[#25D366] shrink-0 mt-0.5" />
+        {/* ── WhatsApp Group Card ── */}
+        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 to-white p-5 mb-8">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-9 h-9 rounded-xl bg-[#25D366]/15 flex items-center justify-center shrink-0">
+              <MessageCircle className="w-4.5 h-4.5 text-[#25D366]" />
+            </div>
             <div>
-              <h3 className="text-lg font-bold text-[var(--color-ink)] mb-1">
-                Join our WhatsApp Group
-              </h3>
-              <p className="text-body-sm text-[var(--color-ink-secondary)] mb-4">
-                Please join the official WhatsApp group for all important updates and announcements regarding the SIH Internal Hackathon.
+              <h3 className="font-bold text-sm text-[var(--color-ink)]">💬 Join WhatsApp Group</h3>
+              <p className="text-xs text-[var(--color-ink-secondary)] mt-0.5 leading-relaxed">
+                Saari important updates aur announcements iss group par aayengi. Join karna zaroori hai!
               </p>
-              
-              <div className="flex flex-col sm:flex-row gap-2">
-                <a 
-                  href="https://chat.whatsapp.com/CbAzxPxDjPR4RgYND2Z2iJ?s=sw&p=a&mlu=4&ilr=4" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto"
-                >
-                  <Button className="w-full sm:w-auto bg-[#25D366] hover:bg-[#1DA851] text-white border-transparent gap-2">
-                    Join WhatsApp Group
-                  </Button>
-                </a>
-              </div>
             </div>
           </div>
-        </Card>
+          <a 
+            href="https://chat.whatsapp.com/CbAzxPxDjPR4RgYND2Z2iJ?s=sw&p=a&mlu=4&ilr=4" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2.5 w-full px-5 py-3 bg-[#25D366] text-white rounded-xl text-sm font-bold hover:bg-[#1DA851] transition-all shadow-sm hover:shadow-md"
+          >
+            <MessageCircle className="w-4.5 h-4.5" />
+            Join WhatsApp Group
+          </a>
+        </div>
+
+        {/* ── Return Home ── */}
         <div className="flex justify-center">
           <Link href="/">
-            <Button variant="ghost" icon={<Home className="w-4 h-4" />}>
-              Return to Homepage
+            <Button variant="ghost" className="gap-2 text-[var(--color-ink-secondary)] hover:text-[var(--color-ink)]">
+              <Home className="w-4 h-4" /> Return to Homepage
             </Button>
           </Link>
         </div>
