@@ -1,6 +1,8 @@
 // OfficialSelector component allows selecting an official SIH problem statement.
 import React, { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { UseFormSetValue } from 'react-hook-form';
+import { TeamRegistrationInput } from '@/lib/validation/schemas';
 
 interface ProblemStatement {
   id: string;
@@ -12,7 +14,7 @@ interface ProblemStatement {
 }
 
 interface OfficialSelectorProps {
-  setValue: (name: string, value: any, options?: object) => void;
+  setValue: UseFormSetValue<TeamRegistrationInput>;
 }
 
 export const OfficialSelector: React.FC<OfficialSelectorProps> = ({ setValue }) => {
