@@ -58,7 +58,25 @@ export function RegistrationWizard({
     if (!idempotencyKeyRef.current) {
       idempotencyKeyRef.current = crypto.randomUUID();
     }
-  }, []);
+    
+    // Load from local storage on mount if not in edit mode
+    if (!isEditMode) {
+      try {
+        const saved = localStorage.getItem('sih_registration_draft');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && Object.keys(parsed).length > 0) {
+            // Need to set timeout to allow form to initialize
+            setTimeout(() => {
+              form.reset(parsed);
+            }, 0);
+          }
+        }
+      } catch (e) {
+        console.error('Error loading draft', e);
+      }
+    }
+  }, [isEditMode]);
 
   const form = useForm<TeamRegistrationInput>({
     resolver: zodResolver(teamRegistrationSchema),
@@ -85,6 +103,16 @@ export function RegistrationWizard({
   });
 
   const { control, handleSubmit, trigger, watch, setValue, formState: { errors } } = form;
+
+  // Save to local storage on changes
+  useEffect(() => {
+    if (!isEditMode && !successData) {
+      const subscription = watch((value) => {
+        localStorage.setItem('sih_registration_draft', JSON.stringify(value));
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [watch, isEditMode, successData]);
   const { fields, append, remove } = useFieldArray({ control, name: 'members' });
 
   const watchedMembers = useWatch({ control, name: 'members', defaultValue: [] });
@@ -237,27 +265,17 @@ export function RegistrationWizard({
     setSubmitError('');
 
     try {
-      if (isEditMode && teamId && editToken) {
-        const { updateTeam } = await import('@/app/actions/edit');
-        const result = await updateTeam(teamId, editToken, data, fileMetadata?.path === 'existing' ? null : fileMetadata);
-        if (result.success) {
-          alert('Team details updated successfully!');
-          router.push(`/`);
-        } else {
-          setSubmitError(result.error || 'Failed to update team.');
-        }
+      const result = await registerTeam(data, fileMetadata!, idempotencyKeyRef.current);
+      if (result.success) {
+        idempotencyKeyRef.current = '';
+        localStorage.removeItem('sih_registration_draft');
+        setSuccessData({
+          id: result.teamId!,
+          code: result.registrationCode!,
+          token: result.editToken!
+        });
       } else {
-        const result = await registerTeam(data, fileMetadata!, idempotencyKeyRef.current);
-        if (result.success) {
-          idempotencyKeyRef.current = '';
-          setSuccessData({
-            id: result.teamId!,
-            code: result.registrationCode!,
-            token: result.editToken!
-          });
-        } else {
-          setSubmitError(result.error || 'Failed to register team.');
-        }
+        setSubmitError(result.error || 'Failed to register team.');
       }
     } catch (error) {
       console.error('Submit error:', error);
@@ -268,12 +286,10 @@ export function RegistrationWizard({
   };
 
   if (successData) {
-    const editUrl = `${window.location.origin}/edit?id=${successData.id}&token=${successData.token}`;
-    
     const copyToClipboard = async (text: string) => {
       try {
         await navigator.clipboard.writeText(text);
-        setCopiedField(text === editUrl ? 'link' : 'code');
+        setCopiedField('code');
         setTimeout(() => setCopiedField(null), 2500);
       } catch { /* fallback: do nothing */ }
     };
@@ -314,44 +330,6 @@ export function RegistrationWizard({
           <p className="text-xs text-[var(--color-ink-tertiary)] mt-3">
             📌 Please save this code. You will need it for all future correspondence.
           </p>
-        </div>
-
-        {/* ── Edit Link Card ── */}
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 mb-5">
-          <div className="flex items-start gap-3 mb-4">
-            <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-4.5 h-4.5 text-amber-600" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm text-[var(--color-ink)]">⚠️ Save Your Edit Link</h3>
-              <p className="text-xs text-[var(--color-ink-secondary)] mt-0.5 leading-relaxed">
-                This link will only be shown <strong>once</strong>. If you need to update your team members or idea, you will need this link. Copy and save it somewhere safe.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => copyToClipboard(editUrl)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                copiedField === 'link'
-                  ? 'bg-emerald-500 text-white shadow-md'
-                  : 'bg-amber-600 text-white hover:bg-amber-700 shadow-sm hover:shadow-md'
-              }`}
-            >
-              {copiedField === 'link' ? (
-                <><CheckCircle2 className="w-4 h-4" /> Link Copied!</>
-              ) : (
-                <><ExternalLink className="w-4 h-4" /> Copy Edit Link</>
-              )}
-            </button>
-            <a 
-              href={`/edit?id=${successData.id}&token=${successData.token}`}
-              className="inline-flex items-center justify-center shrink-0 gap-2 h-[42px] px-4 rounded-xl border border-amber-300 text-amber-700 bg-transparent hover:bg-amber-100 text-sm font-semibold transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" /> Open Edit Page
-            </a>
-          </div>
         </div>
 
         {/* ── WhatsApp Group Card ── */}
