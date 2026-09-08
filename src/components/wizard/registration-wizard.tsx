@@ -534,96 +534,175 @@ export function RegistrationWizard({
             </div>
           )}
 
-          {/* Step 2: Problem Statement & Presentation (Combined Step) */}
+          {/* Step 2: Problem Statement & Presentation (Redesigned) */}
           {currentStepIndex === 1 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
+              
+              {/* Step Header */}
               <div>
-                <h2 className="text-xl font-bold mb-1">Problem Statement & Presentation</h2>
-                <p className="text-sm text-[var(--color-ink-secondary)]">
-                  Describe your problem statement and proposed approach, and upload your team&apos;s presentation slide deck.
+                <h2 className="text-2xl font-bold mb-2" style={{ letterSpacing: '-0.02em' }}>Problem Statement & Presentation</h2>
+                <p className="text-sm text-[var(--color-ink-secondary)] leading-relaxed max-w-xl">
+                  Choose your problem statement from the official SIH portal, describe your solution approach, and upload your presentation.
                 </p>
               </div>
 
               {/* Validation Notice Banner */}
               {validationNotice && (
-                <div className="p-4 bg-[var(--color-danger-subtle)] border border-[var(--color-danger)]/30 rounded-lg flex items-center gap-3">
+                <div className="p-4 bg-[var(--color-danger-subtle)] border border-[var(--color-danger)]/30 rounded-xl flex items-center gap-3">
                   <AlertCircle className="w-5 h-5 shrink-0 text-[var(--color-danger)]" />
                   <p className="text-sm font-medium text-[var(--color-danger)]">{validationNotice}</p>
                 </div>
               )}
 
-              {/* PPT Template Download */}
+              {/* ── Section 1: Find Your Problem Statement ── */}
+              <div className="rounded-xl border border-[var(--color-border-subtle)] overflow-hidden">
+                <div className="px-5 py-4 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-hover)] text-white">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                      <ExternalLink className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-base">📋 Find Your Problem Statement</h3>
+                      <p className="text-xs text-white/80 mt-0.5">Official SIH 2026 Problem Statements</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-5 bg-[var(--color-canvas-subtle)] space-y-4">
+                  <p className="text-sm text-[var(--color-ink-secondary)] leading-relaxed">
+                    Agar aapko apna problem statement nahi pata, toh neeche diye gaye link se official SIH website par jaakar apna problem statement choose karein.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-subtle)]">
+                      <span className="w-6 h-6 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</span>
+                      <p className="text-xs text-[var(--color-ink-secondary)] leading-relaxed">Neeche diye button par click karke <strong>SIH website</strong> kholein</p>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-subtle)]">
+                      <span className="w-6 h-6 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
+                      <p className="text-xs text-[var(--color-ink-secondary)] leading-relaxed">Problem Statements mein se apni team ke liye ek <strong>topic choose</strong> karein</p>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border-subtle)]">
+                      <span className="w-6 h-6 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
+                      <p className="text-xs text-[var(--color-ink-secondary)] leading-relaxed">Neeche form mein apna <strong>solution describe</strong> karein</p>
+                    </div>
+                  </div>
+                  <a
+                    href="https://www.sih.gov.in/sih2026PS"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-[var(--color-primary)] text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-all shadow-sm hover:shadow-md"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Visit Official SIH Problem Statements
+                  </a>
+                </div>
+              </div>
+
+              {/* ── Section 2: PPT Template Download ── */}
               {templateUrl && (
-                <div className="p-4 rounded-lg border border-[var(--color-primary-subtle)] bg-[var(--color-primary-subtle)]/30 flex items-start gap-4">
-                  <FileText className="w-6 h-6 text-[var(--color-primary)] shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-[var(--color-ink)] mb-0.5">
-                      📄 {templateTitle || 'SIH Presentation Template'}
-                    </p>
-                    {templateInstructions && (
-                      <p className="text-xs text-[var(--color-ink-secondary)] mb-2">{templateInstructions}</p>
-                    )}
-                    <p className="text-xs text-[var(--color-ink-tertiary)] mb-3">Download and use this official template for your presentation.</p>
-                    <a
-                      href={templateUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
-                    >
-                      <Upload className="w-4 h-4 rotate-180" /> Download Template
-                    </a>
+                <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-sm text-[var(--color-ink)] mb-1">
+                        📄 {templateTitle || 'SIH Presentation Template'}
+                      </h4>
+                      {templateInstructions && (
+                        <p className="text-xs text-[var(--color-ink-secondary)] mb-3 leading-relaxed">{templateInstructions}</p>
+                      )}
+                      <a
+                        href={templateUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
+                      >
+                        <Upload className="w-3.5 h-3.5 rotate-180" /> Download Template
+                      </a>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Problem Statement Input */}
-              <FormField
-                label="Problem Statement & Proposed Solution"
-                error={errors.solution_summary?.message}
-                required
-              >
-                <Controller
-                  name="solution_summary"
-                  control={control}
-                  render={({ field }) => (
-                    <Textarea 
-                      placeholder="Type your problem statement, solution description, key innovation, and proposed technology stack here..." 
-                      rows={8} 
-                      {...field} 
-                    />
-                  )}
-                />
-              </FormField>
-
-              {/* Presentation Upload Section */}
-              <div className="space-y-3 border-t border-[var(--color-border-subtle)] pt-6">
-                <div>
-                  <h3 className="text-base font-bold mb-1">Upload Presentation Deck or Document</h3>
-                  <p className="text-xs text-[var(--color-ink-secondary)]">
-                    Upload your presentation slide deck or document in PDF, PPTX, PNG, or JPG format (max 50MB).
-                  </p>
+              {/* ── Section 3: Describe Your Solution ── */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center">
+                    <FileText className="w-3.5 h-3.5 text-[var(--color-primary)]" />
+                  </div>
+                  <h3 className="font-bold text-base text-[var(--color-ink)]">Describe Your Solution</h3>
                 </div>
+                <p className="text-xs text-[var(--color-ink-tertiary)] pl-10">
+                  Problem statement ka title, aapka proposed solution, key innovation, aur technology stack — sab yahan likhein.
+                </p>
+                <div className="pl-10">
+                  <FormField
+                    label="Problem Statement & Proposed Solution"
+                    error={errors.solution_summary?.message}
+                    required
+                  >
+                    <Controller
+                      name="solution_summary"
+                      control={control}
+                      render={({ field }) => (
+                        <Textarea 
+                          placeholder="Example:&#10;&#10;Problem: Renewable Energy Management System for Rural Areas&#10;&#10;Solution: We propose a IoT-based smart grid system that monitors and distributes solar energy efficiently across rural households...&#10;&#10;Technology: React, Node.js, IoT sensors, Firebase&#10;&#10;Innovation: AI-powered load balancing for off-grid areas" 
+                          rows={10} 
+                          className="resize-y"
+                          {...field} 
+                        />
+                      )}
+                    />
+                  </FormField>
+                </div>
+              </div>
 
-                {!fileMetadata ? (
-                  <div className="border-2 border-dashed border-[var(--color-border-subtle)] rounded-lg p-6 text-center hover:bg-[var(--color-canvas-subtle)] transition-colors relative cursor-pointer">
-                    <input type="file" accept=".pdf,.ppt,.pptx,.png,.jpg,.jpeg,.webp" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
-                    <Upload className="w-8 h-8 text-[var(--color-primary)] mx-auto mb-2" />
-                    <p className="text-sm font-medium text-[var(--color-ink)]">Click or drag file to upload</p>
-                    <p className="text-xs text-[var(--color-ink-tertiary)] mt-1">Allowed formats: .pdf, .ppt, .pptx, .png, .jpg, .jpeg, .webp (max 50MB)</p>
-                    {uploadProgress > 0 && <p className="mt-3 text-sm text-[var(--color-primary)] font-medium">Uploading: {uploadProgress}%</p>}
+              {/* ── Section 4: Upload Presentation ── */}
+              <div className="space-y-3 border-t border-[var(--color-border-subtle)] pt-8">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-full bg-[var(--color-primary)]/10 flex items-center justify-center">
+                    <Upload className="w-3.5 h-3.5 text-[var(--color-primary)]" />
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between p-4 bg-[var(--color-success-subtle)] rounded-lg border border-[var(--color-success)]">
-                    <div className="flex items-center gap-3 text-[var(--color-success)]">
-                      <Upload className="w-5 h-5" />
-                      <span className="font-medium text-sm">File uploaded successfully: {fileMetadata.name}</span>
+                  <h3 className="font-bold text-base text-[var(--color-ink)]">Upload Presentation</h3>
+                </div>
+                <p className="text-xs text-[var(--color-ink-tertiary)] pl-10">
+                  Apni team ki presentation file upload karein — PDF, PPTX, PNG, ya JPG format mein (max 50MB).
+                </p>
+
+                <div className="pl-10">
+                  {!fileMetadata ? (
+                    <div className="border-2 border-dashed border-[var(--color-border-subtle)] rounded-xl p-8 text-center hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-primary)]/[0.02] transition-all duration-300 relative cursor-pointer group">
+                      <input type="file" accept=".pdf,.ppt,.pptx,.png,.jpg,.jpeg,.webp" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                      <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[var(--color-primary)]/10 flex items-center justify-center group-hover:bg-[var(--color-primary)]/20 transition-colors">
+                        <Upload className="w-7 h-7 text-[var(--color-primary)]" />
+                      </div>
+                      <p className="text-sm font-semibold text-[var(--color-ink)] mb-1">Click to upload or drag & drop</p>
+                      <p className="text-xs text-[var(--color-ink-tertiary)]">PDF, PPTX, PNG, JPG, WEBP — Max 50MB</p>
+                      {uploadProgress > 0 && (
+                        <div className="mt-4">
+                          <div className="w-full max-w-xs mx-auto h-2 bg-[var(--color-border-subtle)] rounded-full overflow-hidden">
+                            <div className="h-full bg-[var(--color-primary)] rounded-full transition-all duration-500" style={{ width: `${uploadProgress}%` }} />
+                          </div>
+                          <p className="mt-2 text-xs text-[var(--color-primary)] font-medium">Uploading: {uploadProgress}%</p>
+                        </div>
+                      )}
                     </div>
-                    <button type="button" onClick={() => {setFileMetadata(null); setUploadProgress(0);}} className="text-[var(--color-ink-tertiary)] hover:text-[var(--color-danger)] transition-colors">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex items-center justify-between p-4 bg-[var(--color-success-subtle)] rounded-xl border border-[var(--color-success)]">
+                      <div className="flex items-center gap-3 text-[var(--color-success)]">
+                        <CheckCircle2 className="w-5 h-5 shrink-0" />
+                        <div>
+                          <span className="font-semibold text-sm block">File uploaded successfully</span>
+                          <span className="text-xs text-[var(--color-ink-secondary)]">{fileMetadata.name}</span>
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => {setFileMetadata(null); setUploadProgress(0);}} className="p-1.5 rounded-lg text-[var(--color-ink-tertiary)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-subtle)] transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
