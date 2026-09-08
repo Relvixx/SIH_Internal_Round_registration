@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { FormField } from '@/components/ui/form-field';
 import { Select } from '@/components/ui/select';
 import { Upload, X, AlertCircle, CheckCircle2, AlertTriangle, ExternalLink, Home, Plus, Trash2, Users, FileText, MessageCircle } from 'lucide-react';
-import { OfficialSelector } from '@/components/problem-statement/OfficialSelector';
+
 import { registerTeam } from '@/app/actions/register';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -539,7 +539,6 @@ export function RegistrationWizard({
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
               <div>
                 <h2 className="text-xl font-bold mb-1">Problem Statement & Presentation</h2>
-                 <OfficialSelector setValue={setValue} />
                 <p className="text-sm text-[var(--color-ink-secondary)]">
                   Describe your problem statement and proposed approach, and upload your team&apos;s presentation slide deck.
                 </p>

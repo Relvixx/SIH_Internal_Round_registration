@@ -56,32 +56,6 @@ export async function registerTeam(
       return { success: false, error: `Team must have at least ${settings.minimum_female_members} female member(s).` };
     }
 
-    // D. Verify Problem Statement if provided, or fallback to default
-    let problemStatementId = validatedData.problem_statement_id;
-    // D. Verify Problem Statement is active (if provided)
-    if (validatedData.problem_statement_id) {
-      const { data: psData, error: psError } = await supabase
-        .from('problem_statements')
-        .select('is_active')
-        .eq('id', validatedData.problem_statement_id)
-        .single();
-
-      if (psError || !psData) {
-        return { success: false, error: 'Invalid problem statement selected.' };
-      }
-      if (!psData.is_active) {
-        return { success: false, error: 'The selected problem statement is no longer active.' };
-      }
-    }
-    if (!problemStatementId) {
-      const { data: defaultPs } = await supabase
-        .from('problem_statements')
-        .select('id')
-        .limit(1)
-        .single();
-      problemStatementId = defaultPs?.id || undefined;
-    }
-
     // 3. Generate plain text Edit Token and hash it
     const plainTextToken = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(plainTextToken).digest('hex');
@@ -116,7 +90,7 @@ export async function registerTeam(
       p_idempotency_key: idempotencyKey,
       p_idea_title: validatedData.idea_title || validatedData.team_name,
       p_idea_description: validatedData.solution_summary,
-      p_problem_statement_id: problemStatementId || null,
+      p_problem_statement_id: null, // Problem statement removed
       p_edit_token_hash: tokenHash,
       p_members: membersData,
       p_file_path: fileMetadata.path,
