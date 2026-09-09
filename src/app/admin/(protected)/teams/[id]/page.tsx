@@ -9,8 +9,11 @@ import { CompliancePanel } from './compliance-panel';
 import { AddAdminNote } from './admin-notes';
 import { EvaluationForm } from './evaluation-form';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { TEAM_STATUS_VARIANTS, TEAM_STATUS_LABELS } from '@/lib/constants';
 import { createAdminClient } from '@/lib/supabase/server';
+import Link from 'next/link';
+import { Edit } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Team Details' };
 
@@ -66,9 +69,16 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ id:
             title={team.registration_code} 
             description={`Submitted on ${new Date(team.submitted_at).toLocaleString()}`} 
           />
-          <Badge variant={TEAM_STATUS_VARIANTS[team.status as keyof typeof TEAM_STATUS_VARIANTS] || 'default'} className="text-sm">
-            {TEAM_STATUS_LABELS[team.status as keyof typeof TEAM_STATUS_LABELS] || team.status}
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Link href={`/admin/teams/${team.id}/edit`}>
+              <Button variant="outline" className="gap-2 border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)]">
+                <Edit className="w-4 h-4" /> Edit Registration
+              </Button>
+            </Link>
+            <Badge variant={TEAM_STATUS_VARIANTS[team.status as keyof typeof TEAM_STATUS_VARIANTS] || 'default'} className="text-sm">
+              {TEAM_STATUS_LABELS[team.status as keyof typeof TEAM_STATUS_LABELS] || team.status}
+            </Badge>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
