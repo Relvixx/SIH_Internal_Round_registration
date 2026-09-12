@@ -119,14 +119,14 @@ export function TeamEditForm({
                 <Select
                   value={field.value || ''}
                   onChange={field.onChange}
-                  options={[
-                    { value: '', label: 'Select Problem Statement...' },
-                    ...problemStatements.map(ps => ({
-                      value: ps.id,
-                      label: `${ps.ps_id}: ${ps.title}`
-                    }))
-                  ]}
-                />
+                >
+                  <option value="">Select Problem Statement...</option>
+                  {problemStatements.map((ps) => (
+                    <option key={ps.id} value={ps.id}>
+                      {ps.ps_id}: {ps.title}
+                    </option>
+                  ))}
+                </Select>
               )}
             />
           </FormField>
@@ -194,7 +194,11 @@ export function TeamEditForm({
                   </FormField>
                   <FormField label="Gender" required error={errors.members?.[index]?.gender?.message}>
                     <Controller name={`members.${index}.gender`} control={control} render={({ field }) => (
-                      <Select value={field.value} onChange={field.onChange} options={[{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }]} />
+                      <Select value={field.value} onChange={field.onChange}>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </Select>
                     )} />
                   </FormField>
                   <FormField label="Department/Branch" required error={errors.members?.[index]?.department?.message}>

@@ -81,7 +81,9 @@ export default async function AdminTeamsPage({ searchParams }: TeamsPageProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium truncate max-w-[200px] sm:max-w-xs">{team.idea_title}</div>
+                    <Link href={`/admin/teams/${team.id}`} className="block">
+                      <div className="font-medium truncate max-w-[200px] sm:max-w-xs hover:text-[var(--color-primary-600)]">{team.idea_title}</div>
+                    </Link>
                     <div className="text-body-xs text-[var(--color-ink-secondary)] mt-1">
                       PS: {team.problem_statement_code || 'N/A'}
                     </div>

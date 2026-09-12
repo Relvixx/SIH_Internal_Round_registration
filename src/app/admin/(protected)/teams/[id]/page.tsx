@@ -67,7 +67,7 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ id:
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <PageHeader 
             title={team.registration_code} 
-            description={`Submitted on ${new Date(team.submitted_at).toLocaleString()}`} 
+            description={`Submitted on ${new Date(team.submitted_at || team.created_at).toLocaleString()}`} 
           />
           <div className="flex items-center gap-3">
             <Link href={`/admin/teams/${team.id}/edit`}>

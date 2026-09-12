@@ -117,7 +117,7 @@ export async function getAdminTeamDetail(teamId: string) {
 
   return {
     team: teamResult.data as AdminTeamView,
-    members: membersResult.data as AdminTeamMember[],
+    members: (membersResult.data || []) as AdminTeamMember[],
     presentation: filesResult.data || null,
   };
 }
