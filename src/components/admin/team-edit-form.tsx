@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { teamRegistrationSchema, TeamRegistrationInput } from '@/lib/validation/schemas';
+import { teamRegistrationSchema, TeamRegistrationInput, createTeamRegistrationSchema } from '@/lib/validation/schemas';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,28 +18,45 @@ import Link from 'next/link';
 export function TeamEditForm({ 
   teamId, 
   initialData, 
-  problemStatements 
+  problemStatements,
+  minTeamSize,
+  maxTeamSize,
+  minFemale
 }: { 
   teamId: string;
   initialData: Partial<TeamRegistrationInput>;
   problemStatements: Array<{ id: string; ps_id: string; title: string }>;
+  minTeamSize?: number;
+  maxTeamSize?: number;
+  minFemale?: number;
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const currentMinSize = minTeamSize ?? 3;
+  const currentMaxSize = maxTeamSize ?? 6;
+  const currentMinFemale = minFemale ?? 1;
+
+  const dynamicSchema = createTeamRegistrationSchema(currentMinSize, currentMaxSize, currentMinFemale);
+
   const form = useForm<TeamRegistrationInput>({
-    resolver: zodResolver(teamRegistrationSchema),
+    resolver: zodResolver(dynamicSchema),
     mode: 'onChange',
     defaultValues: initialData as any,
   });
 
-  const { control, handleSubmit, formState: { errors } } = form;
+  useEffect(() => {
+    form.clearErrors();
+  }, [minTeamSize, maxTeamSize, minFemale, form]);
+
+  const { control, handleSubmit, formState: { errors }, watch } = form;
   const { fields, append, remove } = useFieldArray({ control, name: 'members' });
   const teamSize = fields.length;
+  const watchedMembers = watch('members') || [];
 
   const addMember = () => {
-    if (fields.length < 6) {
+    if (fields.length < currentMaxSize) {
       append({
         member_order: fields.length + 1,
         role: 'member',
@@ -55,6 +72,28 @@ export function TeamEditForm({
   };
 
   const onSubmit = async (data: TeamRegistrationInput) => {
+    if (teamSize < currentMinSize) {
+      setErrorMsg(`A team must have at least ${currentMinSize} members.`);
+      return;
+    }
+    if (teamSize > currentMaxSize) {
+      setErrorMsg(`A team can have a maximum of ${currentMaxSize} members.`);
+      return;
+    }
+    
+    const females = watchedMembers.filter(m => m.gender === 'female').length;
+    if (females < currentMinFemale) {
+      setErrorMsg(`A team must include at least ${currentMinFemale} female member(s).`);
+      return;
+    }
+    
+    // Zod validation fallback
+    const parsed = dynamicSchema.safeParse(data);
+    if (!parsed.success) {
+      setErrorMsg('Please check the form for errors.');
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMsg('');
     try {
@@ -154,7 +193,7 @@ export function TeamEditForm({
               <Users className="w-5 h-5 text-[var(--color-primary)]" />
               2. Team Members
             </h2>
-            <span className="text-sm font-medium">Count: {teamSize}/6</span>
+            <span className="text-sm font-medium">Count: {teamSize}/{currentMaxSize}</span>
           </div>
           
           {errors.members?.root?.message && (
@@ -174,7 +213,14 @@ export function TeamEditForm({
                     <Button
                       type="button"
                       variant="ghost"
-                      onClick={() => remove(index)}
+                      onClick={() => {
+                        if (fields.length > currentMinSize) {
+                          remove(index);
+                          setErrorMsg('');
+                        } else {
+                          setErrorMsg(`A team must have at least ${currentMinSize} members.`);
+                        }
+                      }}
                       className="text-[var(--color-danger)] hover:bg-[var(--color-danger-subtle)] h-8 px-2"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -212,7 +258,7 @@ export function TeamEditForm({
             ))}
           </div>
 
-          {teamSize < 6 && (
+          {teamSize < currentMaxSize && (
             <Button type="button" variant="outline" onClick={addMember} className="w-full gap-2 border-dashed">
               <Plus className="w-4 h-4" /> Add Team Member
             </Button>

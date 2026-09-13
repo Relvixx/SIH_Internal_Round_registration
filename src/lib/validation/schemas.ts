@@ -68,13 +68,27 @@ export const teamRegistrationSchema = z.object({
   key_innovation: z.string().max(1000).optional().nullable(),
   proposed_technology: z.string().max(1000).optional().nullable(),
   members: z.array(teamMemberSchema)
-    .min(3, 'A team must have at least 3 members.')
-    .max(6, 'A team cannot have more than 6 members.'),
-}).refine(
-  (data) => data.members.filter((m) => m.gender === 'female').length >= 1,
-  { message: 'Your team must include at least 1 female member to proceed.', path: ['members'] }
-);
+    .min(1, 'A team must have at least 1 member.')
+    .max(20, 'A team cannot have more than 20 members.'), // generous defaults for type inference
+});
 export type TeamRegistrationInput = z.infer<typeof teamRegistrationSchema>;
+
+export function createTeamRegistrationSchema(minSize: number = 3, maxSize: number = 6, minFemale: number = 1) {
+  return z.object({
+    team_name: z.string().min(1, 'Team name is required').max(200),
+    problem_statement_id: z.string().optional(),
+    idea_title: z.string().optional(),
+    solution_summary: z.string().min(1, 'Problem statement and solution description is required').max(5000),
+    key_innovation: z.string().max(1000).optional().nullable(),
+    proposed_technology: z.string().max(1000).optional().nullable(),
+    members: z.array(teamMemberSchema)
+      .min(minSize, `A team must have at least ${minSize} members.`)
+      .max(maxSize, `A team cannot have more than ${maxSize} members.`),
+  }).refine(
+    (data) => data.members.filter((m) => m.gender === 'female').length >= minFemale,
+    { message: `Your team must include at least ${minFemale} female member(s) to proceed.`, path: ['members'] }
+  );
+}
 
 // ── File Metadata ──
 export const fileMetadataSchema = z.object({

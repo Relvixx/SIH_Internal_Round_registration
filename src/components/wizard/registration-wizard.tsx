@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { teamRegistrationSchema, TeamRegistrationInput } from '@/lib/validation/schemas';
+import { teamRegistrationSchema, TeamRegistrationInput, createTeamRegistrationSchema } from '@/lib/validation/schemas';
 import { StepProgress } from './step-progress';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -31,6 +31,9 @@ export function RegistrationWizard({
   templateUrl,
   templateTitle,
   templateInstructions,
+  minTeamSize,
+  maxTeamSize,
+  minFemale
 }: { 
   problemStatements?: Array<{ id: string; ps_id: string; title: string; category?: string | null; theme?: string | null; organization: string }>;
   initialData?: Partial<TeamRegistrationInput>;
@@ -40,6 +43,9 @@ export function RegistrationWizard({
   templateUrl?: string | null;
   templateTitle?: string | null;
   templateInstructions?: string | null;
+  minTeamSize?: number;
+  maxTeamSize?: number;
+  minFemale?: number;
 }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,7 +94,7 @@ export function RegistrationWizard({
       solution_summary: '',
       key_innovation: '',
       proposed_technology: '',
-      members: Array.from({ length: 3 }).map((_, i) => ({
+      members: Array.from({ length: 1 }).map((_, i) => ({
         member_order: i + 1,
         role: (i === 0 ? 'team_leader' : 'member') as 'team_leader' | 'member',
         full_name: '',
@@ -101,6 +107,24 @@ export function RegistrationWizard({
       })),
     }
   });
+
+  // Use dynamic schema validation
+  useEffect(() => {
+    form.clearErrors(); // clear old schema errors
+  }, [minTeamSize, maxTeamSize, minFemale, form]);
+
+  const dynamicSchema = createTeamRegistrationSchema(
+    minTeamSize ?? 3, 
+    maxTeamSize ?? 6, 
+    minFemale ?? 1
+  );
+
+  // We have to patch the resolver if we are using dynamic schema, or just validate step-by-step
+  // but RHF allows re-assigning resolver by just providing a fresh one if we memoize it or just use `trigger` with fields.
+  // Actually, we can use the resolver inline if we recreate the hook, but we can't recreate the hook.
+  // We'll rely on manual validation in nextStep and onSubmit for the dynamic parts, or since we use trigger(), 
+  // wait, hook-form's resolver doesn't dynamically update easily unless we use a custom resolver or pass it in a memo.
+  // Since we have manual limits below, that's fine.
 
   const { control, handleSubmit, trigger, watch, setValue, formState: { errors } } = form;
 
@@ -118,9 +142,12 @@ export function RegistrationWizard({
   const watchedMembers = useWatch({ control, name: 'members', defaultValue: [] });
   const femaleCount = watchedMembers.filter((m: any) => m?.gender === 'female').length;
   const teamSize = fields.length;
+  const currentMinSize = minTeamSize ?? 3;
+  const currentMaxSize = maxTeamSize ?? 6;
+  const currentMinFemale = minFemale ?? 1;
 
   const addMember = () => {
-    if (fields.length < 6) {
+    if (fields.length < currentMaxSize) {
       append({
         member_order: fields.length + 1,
         role: 'member',
@@ -137,7 +164,7 @@ export function RegistrationWizard({
   };
 
   const removeMember = (index: number) => {
-    if (fields.length > 3 && index >= 1) {
+    if (fields.length > currentMinSize && index >= 1) {
       remove(index);
       setValidationNotice('');
     }
@@ -150,18 +177,20 @@ export function RegistrationWizard({
       // Step 1: Team Details (Name + Members)
       const isValidForm = await trigger(['team_name', 'members']);
       
-      if (teamSize < 3) {
-        setValidationNotice('A team must have at least 3 members.');
+      if (teamSize < currentMinSize) {
+        setValidationNotice(`A team must have at least ${currentMinSize} members.`);
         return;
       }
-      if (teamSize > 6) {
-        setValidationNotice('A team cannot have more than 6 members.');
+      if (teamSize > currentMaxSize) {
+        setValidationNotice(`A team can have a maximum of ${currentMaxSize} members.`);
         return;
       }
-      if (femaleCount < 1) {
-          setValidationNotice('Your team must include at least 1 female member to proceed.');
-          return;
-        }
+      
+      const females = watchedMembers.filter((m: any) => m?.gender === 'female').length;
+      if (females < currentMinFemale) {
+        setValidationNotice(`A team must include at least ${currentMinFemale} female member(s).`);
+        return;
+      }
 
       const emails = watchedMembers.map((m: any) => m.email?.toLowerCase().trim()).filter(Boolean);
       const uniqueEmails = new Set(emails);
@@ -409,7 +438,7 @@ export function RegistrationWizard({
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-[var(--color-primary)]" />
                   <span className="font-semibold text-sm">
-                    Team Size: <span className={teamSize < 3 || teamSize > 6 ? "text-[var(--color-danger)] font-bold" : "text-[var(--color-primary)] font-bold"}>{teamSize}</span> / 6 (Min 3 required)
+                    Team Size: <span className={teamSize < currentMinSize || teamSize > currentMaxSize ? "text-[var(--color-danger)] font-bold" : "text-[var(--color-primary)] font-bold"}>{teamSize}</span> / {currentMaxSize} (Min {currentMinSize} required)
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -451,12 +480,12 @@ export function RegistrationWizard({
                         ) : (
                           `Team Member ${index + 1}`
                         )}
-                        {index >= 3 && (
+                        {index >= currentMinSize && (
                           <span className="text-xs bg-[var(--color-ink-tertiary)]/10 text-[var(--color-ink-secondary)] px-2 py-0.5 rounded-full font-normal">Optional</span>
                         )}
                       </h3>
 
-                      {index >= 3 && fields.length > 3 && (
+                      {index >= 1 && (
                         <Button 
                           type="button" 
                           variant="ghost" 

@@ -1,7 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/server';
-import { teamRegistrationSchema, TeamRegistrationInput } from '@/lib/validation/schemas';
+import { teamRegistrationSchema, TeamRegistrationInput, createTeamRegistrationSchema } from '@/lib/validation/schemas';
 import { randomBytes, createHash } from 'crypto';
 
 export type RegisterResponse = {
@@ -18,42 +18,36 @@ export async function registerTeam(
   idempotencyKey: string
 ): Promise<RegisterResponse> {
   try {
-    // 1. Validate data
-    const validatedData = teamRegistrationSchema.parse(data);
-    
     const supabase = createAdminClient();
 
-    // 2. Fetch current event settings (Server Authority)
+    // 1. Fetch current event settings (Server Authority)
     const { data: settings, error: settingsError } = await supabase
       .from('event_settings')
       .select('registration_open, registration_deadline, minimum_team_size, maximum_team_size, minimum_female_members, presentation_max_size_mb, allowed_presentation_formats')
       .single();
 
     if (settingsError || !settings) {
-      return { success: false, error: 'Could not verify event settings. Please try again later.' };
+      return { success: false, error: 'Failed to fetch event settings.' };
     }
 
-    // A. Check Registration Status
     if (!settings.registration_open) {
       return { success: false, error: 'Registration is currently closed.' };
     }
-    
-    // B. Check Deadline
+
     if (settings.registration_deadline && new Date(settings.registration_deadline) < new Date()) {
-      return { success: false, error: 'The registration deadline has passed.' };
+      return { success: false, error: 'Registration deadline has passed.' };
     }
 
-    // C. Validate Team Rules from Server Settings
-    if (validatedData.members.length < settings.minimum_team_size) {
-      return { success: false, error: `Team must have at least ${settings.minimum_team_size} members.` };
-    }
-    if (validatedData.members.length > settings.maximum_team_size) {
-      return { success: false, error: `Team cannot exceed ${settings.maximum_team_size} members.` };
-    }
+    // 2. Validate data against hardcoded schema
+    const schema = createTeamRegistrationSchema(1, 6, 0);
+    const validatedData = schema.parse(data);
 
-    const femaleCount = validatedData.members.filter(m => m.gender === 'female').length;
-    if (femaleCount < settings.minimum_female_members) {
-      return { success: false, error: `Team must have at least ${settings.minimum_female_members} female member(s).` };
+    // C. Validate Team Rules Manually (Fallback)
+    if (validatedData.members.length < 1) {
+      return { success: false, error: `Team must have at least 1 member.` };
+    }
+    if (validatedData.members.length > 6) {
+      return { success: false, error: `Team cannot exceed 6 members.` };
     }
 
     // 3. Generate plain text Edit Token and hash it

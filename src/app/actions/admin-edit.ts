@@ -1,12 +1,13 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/server';
-import { teamRegistrationSchema, TeamRegistrationInput } from '@/lib/validation/schemas';
+import { teamRegistrationSchema, TeamRegistrationInput, createTeamRegistrationSchema } from '@/lib/validation/schemas';
 import { revalidatePath } from 'next/cache';
 
 export async function adminUpdateTeam(teamId: string, data: TeamRegistrationInput) {
   const supabase = createAdminClient();
-  const parsed = teamRegistrationSchema.safeParse(data);
+  const schema = createTeamRegistrationSchema(1, 6, 0);
+  const parsed = schema.safeParse(data);
   if (!parsed.success) {
     return { success: false, error: 'Invalid form data' };
   }

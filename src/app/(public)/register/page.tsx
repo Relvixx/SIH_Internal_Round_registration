@@ -24,7 +24,7 @@ export default async function RegisterPage() {
 
   const { data: eventSettings } = await supabase
     .from('event_settings')
-    .select('registration_open, template_title, template_storage_path, template_instructions')
+    .select('registration_open, template_title, template_storage_path, template_instructions, minimum_team_size, maximum_team_size, minimum_female_members')
     .single();
 
   const isRegistrationOpen = eventSettings?.registration_open ?? true;
@@ -63,6 +63,9 @@ export default async function RegisterPage() {
           templateUrl={templateUrl}
           templateTitle={eventSettings?.template_title ?? null}
           templateInstructions={eventSettings?.template_instructions ?? null}
+          minTeamSize={1}
+          maxTeamSize={6}
+          minFemale={0}
         />
       )}
     </div>

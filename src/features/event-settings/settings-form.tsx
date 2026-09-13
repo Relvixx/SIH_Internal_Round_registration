@@ -122,37 +122,8 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               />
             </FormField>
 
-            <div className="grid grid-cols-3 gap-4">
-              <FormField label="Min Team Size" htmlFor="minimum_team_size" required>
-                <Input
-                  id="minimum_team_size"
-                  name="minimum_team_size"
-                  type="number"
-                  min={1}
-                  max={20}
-                  defaultValue={settings.minimum_team_size}
-                />
-              </FormField>
-              <FormField label="Max Team Size" htmlFor="maximum_team_size" required>
-                <Input
-                  id="maximum_team_size"
-                  name="maximum_team_size"
-                  type="number"
-                  min={1}
-                  max={20}
-                  defaultValue={settings.maximum_team_size}
-                />
-              </FormField>
-              <FormField label="Min Female Members" htmlFor="minimum_female_members" required>
-                <Input
-                  id="minimum_female_members"
-                  name="minimum_female_members"
-                  type="number"
-                  min={0}
-                  max={20}
-                  defaultValue={settings.minimum_female_members}
-                />
-              </FormField>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Team size settings removed per user request */}
             </div>
 
             <Alert variant="warning" title="Impact Notice">

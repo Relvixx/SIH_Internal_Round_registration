@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'Edit Team Registration' };
 
 export default async function AdminTeamEditPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  let team, members, problemStatements;
+  let team, members, problemStatements, eventSettings;
 
   try {
     const detail = await getAdminTeamDetail(resolvedParams.id);
@@ -22,6 +22,13 @@ export default async function AdminTeamEditPage({ params }: { params: Promise<{ 
       .order('ps_id', { ascending: true });
     
     problemStatements = psRes.data || [];
+
+    const settingsRes = await supabase
+      .from('event_settings')
+      .select('minimum_team_size, maximum_team_size, minimum_female_members')
+      .single();
+
+    eventSettings = settingsRes.data || { minimum_team_size: 3, maximum_team_size: 6, minimum_female_members: 1 };
 
   } catch (error) {
     console.error('Failed to load team for edit:', error);
@@ -53,6 +60,9 @@ export default async function AdminTeamEditPage({ params }: { params: Promise<{ 
         teamId={resolvedParams.id} 
         initialData={initialData} 
         problemStatements={problemStatements} 
+        minTeamSize={1}
+        maxTeamSize={6}
+        minFemale={0}
       />
     </div>
   );
