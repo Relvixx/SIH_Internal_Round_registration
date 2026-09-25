@@ -85,8 +85,8 @@ export function createTeamRegistrationSchema(minSize: number = 3, maxSize: numbe
       .min(minSize, `A team must have at least ${minSize} members.`)
       .max(maxSize, `A team cannot have more than ${maxSize} members.`),
   }).refine(
-    (data) => data.members.filter((m) => m.gender === 'female').length >= minFemale,
-    { message: `Your team must include at least ${minFemale} female member(s) to proceed.`, path: ['members'] }
+    (data) => data.members.length !== 2 || data.members.filter((m) => m.gender === 'female').length >= minFemale,
+    { message: `A two-member team must include at least ${minFemale} female member(s) to proceed.`, path: ['members'] }
   );
 }
 

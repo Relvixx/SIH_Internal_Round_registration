@@ -4,7 +4,6 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export type SignedUploadResponse = {
   success: boolean;
-  signedUrl?: string;
   storagePath?: string;
   token?: string;
   error?: string;
@@ -18,30 +17,20 @@ export async function getSignedUploadUrl(
   try {
     const supabase = createAdminClient();
 
-    // 1. Fetch Event Settings with Fallbacks
-    let presentationMaxSizeMb = 50;
-    let allowedFormats = ['pdf', 'ppt', 'pptx', 'png', 'jpg', 'jpeg', 'webp'];
+    // Upload limits are event rules, so do not fall back to more permissive values
+    // when the settings query fails.
+    const { data: settings, error: settingsError } = await supabase
+      .from('event_settings')
+      .select('presentation_max_size_mb, allowed_presentation_formats')
+      .single();
 
-    try {
-      const { data: settings } = await supabase
-        .from('event_settings')
-        .select('presentation_max_size_mb, allowed_presentation_formats')
-        .single();
-
-      if (settings?.presentation_max_size_mb) {
-        presentationMaxSizeMb = settings.presentation_max_size_mb;
-      }
-      if (settings?.allowed_presentation_formats && settings.allowed_presentation_formats.length > 0) {
-        // Strip leading dots to match extension variable
-        allowedFormats = settings.allowed_presentation_formats.map((f: string) => f.replace(/^\./, ''));
-        const imageExtensions = ['png', 'jpg', 'jpeg', 'webp'];
-        imageExtensions.forEach(ext => {
-          if (!allowedFormats.includes(ext)) allowedFormats.push(ext);
-        });
-      }
-    } catch (e) {
-      console.warn('Using default upload settings due to fetch error:', e);
+    if (settingsError || !settings) {
+      return { success: false, error: 'Unable to load the presentation upload requirements. Please try again.' };
     }
+
+    const presentationMaxSizeMb = settings.presentation_max_size_mb;
+    const allowedFormats = settings.allowed_presentation_formats
+      .map((format: string) => format.replace(/^\./, '').toLowerCase());
 
     // 2. Validate File Size
     const maxSizeBytes = presentationMaxSizeMb * 1024 * 1024;
@@ -80,18 +69,11 @@ export async function getSignedUploadUrl(
 
     if (error || !data) {
       console.error('Failed to create signed upload url:', error);
-      // Fallback for dev / unconfigured bucket environments
-      return {
-        success: true,
-        signedUrl: '#',
-        storagePath,
-        token: 'dev-token'
-      };
+      return { success: false, error: 'Unable to prepare the file upload. Please try again.' };
     }
 
     return { 
       success: true, 
-      signedUrl: data.signedUrl, 
       storagePath,
       token: data.token
     };

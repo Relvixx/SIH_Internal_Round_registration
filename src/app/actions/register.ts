@@ -1,7 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/server';
-import { teamRegistrationSchema, TeamRegistrationInput, createTeamRegistrationSchema } from '@/lib/validation/schemas';
+import { TeamRegistrationInput, createTeamRegistrationSchema } from '@/lib/validation/schemas';
 import { randomBytes, createHash } from 'crypto';
 
 export type RegisterResponse = {
@@ -38,16 +38,16 @@ export async function registerTeam(
       return { success: false, error: 'Registration deadline has passed.' };
     }
 
-    // 2. Validate data against hardcoded schema
-    const schema = createTeamRegistrationSchema(1, 6, 0);
+    // 2. Apply the same team rules shown to applicants.
+    const minimumTeamSize = settings.minimum_team_size;
+    const maximumTeamSize = settings.maximum_team_size;
+    const minimumFemaleMembers = settings.minimum_female_members;
+    const schema = createTeamRegistrationSchema(minimumTeamSize, maximumTeamSize, minimumFemaleMembers);
     const validatedData = schema.parse(data);
 
-    // C. Validate Team Rules Manually (Fallback)
-    if (validatedData.members.length < 1) {
-      return { success: false, error: `Team must have at least 1 member.` };
-    }
-    if (validatedData.members.length > 6) {
-      return { success: false, error: `Team cannot exceed 6 members.` };
+    const memberEmails = validatedData.members.map((member) => member.email.trim().toLowerCase());
+    if (new Set(memberEmails).size !== memberEmails.length) {
+      return { success: false, error: 'Each team member must have a unique email address.' };
     }
 
     // 3. Generate plain text Edit Token and hash it
@@ -56,15 +56,37 @@ export async function registerTeam(
     
     // 4. Verify Actual Uploaded Presentation Before Finalization
     // DO NOT trust client-declared metadata. Check Supabase Storage.
+    if (!/^uploads\/[0-9a-f-]{36}\.[a-z0-9]+$/i.test(fileMetadata.path)) {
+      return { success: false, error: 'Invalid presentation upload. Please upload the file again.' };
+    }
+
     const pathParts = fileMetadata.path.split('/');
     const fileName = pathParts.pop() || '';
     
-    // Basic Mime/Format Check from Storage Metadata
+    // Validate the extension against the configured event formats.
     const extension = fileName.split('.').pop()?.toLowerCase() || '';
-    const allowedFormatsFromSettings = (settings?.allowed_presentation_formats || ['pdf', 'pptx']).map((f: string) => f.replace(/^\./, ''));
-    const allowedFormats = [...allowedFormatsFromSettings, 'png', 'jpg', 'jpeg', 'webp'];
+    const allowedFormats = settings.allowed_presentation_formats
+      .map((format: string) => format.replace(/^\./, '').toLowerCase());
     if (!allowedFormats.includes(extension)) {
-       return { success: false, error: 'Uploaded file format is not allowed.' };
+      return { success: false, error: 'Uploaded file format is not allowed.' };
+    }
+
+    if (fileMetadata.size <= 0 || fileMetadata.size > settings.presentation_max_size_mb * 1024 * 1024) {
+      return { success: false, error: 'Uploaded file size is not allowed.' };
+    }
+
+    const { data: uploadedFiles, error: uploadedFilesError } = await supabase.storage
+      .from('team-submissions')
+      .list('uploads', { limit: 100, search: fileName });
+    const uploadedFile = uploadedFiles?.find((file) => file.name === fileName);
+
+    if (uploadedFilesError || !uploadedFile) {
+      return { success: false, error: 'The presentation file was not found. Please upload it again.' };
+    }
+
+    const storedSize = Number(uploadedFile.metadata?.size);
+    if (!Number.isFinite(storedSize) || storedSize !== fileMetadata.size) {
+      return { success: false, error: 'The uploaded presentation could not be verified. Please upload it again.' };
     }
 
     // 5. Atomic RPC Call

@@ -121,9 +121,16 @@ export async function addAdminNote(team_id: string, note: string) {
 export async function getPresentationSignedUrl(team_id: string, path: string) {
   const supabase = createAdminClient();
   // Authorization check happens via createAdminClient and route protection
-  const { data, error } = await supabase.storage.from('team-submissions').createSignedUrl(path, 3600); // 1 hour
   
-  if (error || !data) return { success: false, error: 'Failed to generate signed URL' };
+  if (!path) {
+    return { success: false, error: 'File path is missing' };
+  }
+
+  const { data, error } = await supabase.storage.from('team-submissions').createSignedUrl(path, 3600, {
+    download: true,
+  }); // 1 hour
+  
+  if (error || !data) return { success: false, error: 'Failed to generate signed URL: ' + (error?.message || 'Unknown error') };
   
   return { success: true, url: data.signedUrl };
 }

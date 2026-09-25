@@ -14,6 +14,7 @@ import { Select } from '@/components/ui/select';
 import { Upload, X, AlertCircle, CheckCircle2, AlertTriangle, ExternalLink, Home, Plus, Trash2, Users, FileText, MessageCircle } from 'lucide-react';
 
 import { registerTeam } from '@/app/actions/register';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -33,7 +34,9 @@ export function RegistrationWizard({
   templateInstructions,
   minTeamSize,
   maxTeamSize,
-  minFemale
+  minFemale,
+  presentationMaxSizeMb = 50,
+  allowedPresentationFormats = ['pptx']
 }: { 
   problemStatements?: Array<{ id: string; ps_id: string; title: string; category?: string | null; theme?: string | null; organization: string }>;
   initialData?: Partial<TeamRegistrationInput>;
@@ -46,6 +49,8 @@ export function RegistrationWizard({
   minTeamSize?: number;
   maxTeamSize?: number;
   minFemale?: number;
+  presentationMaxSizeMb?: number;
+  allowedPresentationFormats?: string[];
 }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -145,6 +150,10 @@ export function RegistrationWizard({
   const currentMinSize = minTeamSize ?? 3;
   const currentMaxSize = maxTeamSize ?? 6;
   const currentMinFemale = minFemale ?? 1;
+  const femaleRequirementApplies = teamSize === 2 && currentMinFemale > 0;
+  const allowedExtensions = allowedPresentationFormats.map((format) => format.replace(/^\./, '').toLowerCase());
+  const acceptedFileTypes = allowedExtensions.map((format) => `.${format}`).join(',');
+  const allowedFileLabel = allowedExtensions.map((format) => format.toUpperCase()).join(', ');
 
   const addMember = () => {
     if (fields.length < currentMaxSize) {
@@ -187,8 +196,8 @@ export function RegistrationWizard({
       }
       
       const females = watchedMembers.filter((m: any) => m?.gender === 'female').length;
-      if (females < currentMinFemale) {
-        setValidationNotice(`A team must include at least ${currentMinFemale} female member(s).`);
+      if (femaleRequirementApplies && females < currentMinFemale) {
+        setValidationNotice(`A two-member team must include at least ${currentMinFemale} female member(s).`);
         return;
       }
 
@@ -224,8 +233,8 @@ export function RegistrationWizard({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 50 * 1024 * 1024) {
-      alert("File must be less than 50MB");
+    if (file.size > presentationMaxSizeMb * 1024 * 1024) {
+      alert(`File must be less than ${presentationMaxSizeMb}MB`);
       return;
     }
 
@@ -235,7 +244,7 @@ export function RegistrationWizard({
       const { getSignedUploadUrl } = await import('@/app/actions/upload');
       const res = await getSignedUploadUrl(file.name, file.type, file.size);
       
-      if (!res.success || !res.signedUrl || !res.storagePath || !res.token) {
+      if (!res.success || !res.storagePath || !res.token) {
         alert(res.error || "Upload authorization failed");
         setUploadProgress(0);
         return;
@@ -243,27 +252,12 @@ export function RegistrationWizard({
 
       setUploadProgress(50);
       
-      if (res.signedUrl === '#' || !res.signedUrl) {
-        setUploadProgress(100);
-        setFileMetadata({
-          path: res.storagePath || `uploads/${file.name}`,
-          name: file.name,
-          size: file.size,
-          mime: file.type || 'application/pdf'
-        });
-        return;
-      }
+      const supabase = createClient();
+      const { error: uploadError } = await supabase.storage
+        .from('team-submissions')
+        .uploadToSignedUrl(res.storagePath, res.token, file, { contentType: file.type || 'application/octet-stream' });
 
-      const uploadRes = await fetch(res.signedUrl, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${res.token}`,
-          'Content-Type': file.type,
-        },
-        body: file,
-      });
-
-      if (uploadRes.ok) {
+      if (!uploadError) {
         setUploadProgress(100);
         setFileMetadata({
           path: res.storagePath,
@@ -272,9 +266,8 @@ export function RegistrationWizard({
           mime: file.type
         });
       } else {
-        const errorText = await uploadRes.text();
-        console.error('Direct upload failed:', errorText);
-        alert("Direct upload failed.");
+        console.error('Signed upload failed:', uploadError);
+        alert(uploadError.message || 'File upload failed.');
         setUploadProgress(0);
       }
     } catch (err) {
@@ -417,7 +410,7 @@ export function RegistrationWizard({
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
               <div>
                 <h2 className="text-xl font-bold mb-2">Team Details</h2>
-                <p className="text-sm text-[var(--color-ink-secondary)]">Enter your team name and member details (Min 3, Max 6 members. Must include at least 1 female member).</p>
+                <p className="text-sm text-[var(--color-ink-secondary)]">Enter your team name and member details (Min {currentMinSize}, Max {currentMaxSize} members{currentMinFemale > 0 ? `. Two-member teams must include at least ${currentMinFemale} female member${currentMinFemale === 1 ? '' : 's'}.` : '.'}).</p>
               </div>
 
               {/* Team Name */}
@@ -443,17 +436,21 @@ export function RegistrationWizard({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-sm">
-                    Female Members: <span className={femaleCount < 1 ? "text-[var(--color-warning-700)] font-bold" : "text-[var(--color-success)] font-bold"}>{femaleCount}</span> / 1 required
+                    {femaleRequirementApplies ? (
+                      <>Female Members: <span className={femaleCount < currentMinFemale ? "text-[var(--color-warning-700)] font-bold" : "text-[var(--color-success)] font-bold"}>{femaleCount}</span> / {currentMinFemale} required</>
+                    ) : (
+                      <>Female member requirement applies to two-member teams only</>
+                    )}
                   </span>
                 </div>
               </div>
 
               {/* Female Count Requirement Alert */}
-              {femaleCount < 1 && (
+              {femaleRequirementApplies && femaleCount < currentMinFemale && (
                   <div className="p-4 bg-[var(--color-warning-subtle)] border border-[var(--color-warning)]/30 rounded-lg flex items-center gap-3">
                     <AlertTriangle className="w-5 h-5 shrink-0 text-[var(--color-warning)]" />
                     <p className="text-sm font-medium text-[var(--color-ink)]">
-                      Your team must include at least 1 female member to proceed.
+                      A two-member team must include at least {currentMinFemale} female member{currentMinFemale === 1 ? '' : 's'} to proceed.
                     </p>
                   </div>
                 )}
@@ -562,7 +559,7 @@ export function RegistrationWizard({
               </div>
 
               {/* Add Member Button */}
-              {fields.length < 6 ? (
+              {fields.length < currentMaxSize ? (
                 <div className="pt-2">
                   <Button 
                     type="button" 
@@ -570,11 +567,11 @@ export function RegistrationWizard({
                     onClick={addMember}
                     className="w-full sm:w-auto gap-2"
                   >
-                    <Plus className="w-4 h-4" /> Add Team Member ({fields.length}/6)
+                    <Plus className="w-4 h-4" /> Add Team Member ({fields.length}/{currentMaxSize})
                   </Button>
                 </div>
               ) : (
-                <p className="text-xs text-[var(--color-ink-tertiary)] italic">Maximum team size of 6 members reached.</p>
+                <p className="text-xs text-[var(--color-ink-tertiary)] italic">Maximum team size of {currentMaxSize} members reached.</p>
               )}
             </div>
           )}
@@ -712,13 +709,13 @@ export function RegistrationWizard({
                   <h3 className="font-bold text-base text-[var(--color-ink)]">Upload Presentation</h3>
                 </div>
                 <p className="text-xs text-[var(--color-ink-tertiary)] pl-10">
-                  Upload your team's presentation file in PDF, PPTX, PNG, or JPG format (max 50MB).
+                  Upload your team's presentation file in {allowedFileLabel} format (max {presentationMaxSizeMb}MB).
                 </p>
 
                 <div className="pl-10">
                   {!fileMetadata ? (
                     <div className="border-2 border-dashed border-[var(--color-border-subtle)] rounded-xl p-8 text-center hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-primary)]/[0.02] transition-all duration-300 relative cursor-pointer group">
-                      <input type="file" accept=".pdf,.ppt,.pptx,.png,.jpg,.jpeg,.webp" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                      <input type="file" accept={acceptedFileTypes} onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
                       <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[var(--color-primary)]/10 flex items-center justify-center group-hover:bg-[var(--color-primary)]/20 transition-colors">
                         <Upload className="w-7 h-7 text-[var(--color-primary)]" />
                       </div>
