@@ -119,8 +119,8 @@ export async function GET(request: NextRequest) {
   let files: FileRecord[] = [];
   
   if (teamIds.length > 0) {
-    // Fetch members in chunks (Supabase .in() has a practical limit)
-    const CHUNK_SIZE = 300; // safe chunk size for .in() filter
+    // Fetch members in chunks. Using 100 to ensure we don't hit the 1000 row limit (100 * 6 = 600 max members per chunk)
+    const CHUNK_SIZE = 100;
     for (let i = 0; i < teamIds.length; i += CHUNK_SIZE) {
       const chunk = teamIds.slice(i, i + CHUNK_SIZE);
       
@@ -174,7 +174,9 @@ export async function GET(request: NextRequest) {
     'Evaluation Score',
     'Evaluation Complete',
     'PPT Filename',
-    'PPT Review Status'
+    'PPT Review Status',
+    'PPT Review Note',
+    'Correction Note'
   ];
 
   const memberHeaders = [];
@@ -212,7 +214,9 @@ export async function GET(request: NextRequest) {
       t.total_score ?? 0,
       t.is_evaluation_complete ? 'Yes' : 'No',
       filesByTeam[t.id] || '',
-      t.ppt_review_status || 'not_reviewed'
+      t.ppt_review_status || 'not_reviewed',
+      t.ppt_review_note || '',
+      t.correction_note || ''
     ];
 
     const memberData: string[] = [];
