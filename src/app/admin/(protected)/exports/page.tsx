@@ -20,7 +20,7 @@ export default function AdminExportsPage() {
           <div className="p-4 pt-0">
             <a 
               href="/api/admin/export?filter=all" 
-              className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] h-10 px-4 py-2 w-full"
+              className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] h-10 px-4 py-2 w-full"
             >
               <Download className="w-4 h-4" />
               Download All Teams (CSV)
